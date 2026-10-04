@@ -11,16 +11,15 @@ import java.util.List;
 
 /**
  * The notification indicator under LCD Clock's own clock face, where Motorola's face has its
- * dot: a speech bubble, lit in the clock colour while the notifications panel has anything to
- * list (so not while the lock screen hides notifications), unlit segments otherwise, like the
- * face's alarm bell. While some are new to the panel (Notices.unseen) it flashes between the
- * clock colour and its inverse until the panel is opened. Swipe up on the face to see them.
+ * dot: a speech bubble, lit only while there are notifications new to the panel (Notices.unseen),
+ * flashing between the clock colour and its inverse until the panel is opened; unlit segments,
+ * like the face's alarm bell, when there's nothing new (only notifications already seen, or none).
+ * Swipe up on the face to see them.
  */
 final class NoticeDot extends View {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path bubble = new Path();
-    private boolean any;
-    /** Something the panel hasn't shown yet: flashing. */
+    /** Something the panel hasn't shown yet: lit, flashing. */
     private boolean fresh;
     private boolean inverse;
     private static final long FLASH_MS = 500;
@@ -68,7 +67,6 @@ final class NoticeDot extends View {
 
     private void refresh() {
         List<Notices.Item> items = Notices.list(getContext());
-        boolean now = !items.isEmpty();
         boolean nowFresh = !Notices.unseen(getContext(), items).isEmpty();
         if (nowFresh != fresh) {
             fresh = nowFresh;
@@ -77,10 +75,6 @@ final class NoticeDot extends View {
             if (fresh) {
                 postDelayed(flash, FLASH_MS);
             }
-            invalidate();
-        }
-        if (now != any) {
-            any = now;
             invalidate();
         }
     }
@@ -107,7 +101,7 @@ final class NoticeDot extends View {
         bubble.lineTo(cx - s * 0.5f, cy + s * 0.62f);
         bubble.lineTo(cx - s * 0.1f, cy + s * 0.25f);
         bubble.close();
-        fill.setColor(fresh ? (inverse ? inverse(color) : color) : any ? color : SegmentPainter.dim(color));
+        fill.setColor(!fresh ? SegmentPainter.dim(color) : inverse ? inverse(color) : color);
         canvas.drawPath(bubble, fill);
         fill.setColor(Color.BLACK);
         float t = s * 0.12f;
