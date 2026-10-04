@@ -1,0 +1,9 @@
+# Build output (./build.sh, test/fakeplayer/build.sh)
+build/
+test/fakeplayer/out/
+*.apk
+*.apk.idsig
+
+# The signing key: installs over the app on the phone need this same key, so back it up
+# separately rather than keeping it in the repository.
+*.keystore

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press LCD Clock's launcher icon: straight to the recordings. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="recordings"
+        android:enabled="true"
+        android:icon="@drawable/ic_launcher"
+        android:shortcutShortLabel="@string/recordings_title">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.lcdclock"
+            android:targetClass="dev.lcdclock.RecordingsActivity" />
+    </shortcut>
+</shortcuts>

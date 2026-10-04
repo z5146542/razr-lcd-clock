@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="dev.lcdclock.fake">
+    <uses-sdk android:minSdkVersion="33" android:targetSdkVersion="35" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <application android:label="Tube Test">
+        <service android:name="dev.lcdclock.fake.FakePlayer" android:exported="true" android:foregroundServiceType="mediaPlayback" />
+    </application>
+</manifest>

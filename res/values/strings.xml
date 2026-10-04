@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LCD Clock</string>
+    <string name="face_digits">LCD Digits</string>
+    <string name="button_service_label">LCD Clock cover button</string>
+    <string name="button_service_description">With the phone closed, hold volume-down to open LCD Clock\'s alarm and timer on the outside display, or volume-up to open your Home Assistant buttons. Short presses still change the volume, and nothing happens while the phone is open.</string>
+    <string name="timer_done">Timer done</string>
+    <string name="timer_done_channel">Timer done</string>
+    <string name="stop">Stop</string>
+    <string name="snooze">Snooze</string>
+    <string name="alarm_ringing">Alarm</string>
+    <string name="panels_title">Clock face panels</string>
+    <string name="panel_notices">Notifications</string>
+    <string name="panel_notices_help">Swipe up on the clock face. Tap one to read all of it on its own page; dismiss one with ×, or CLEAR them all. While the phone is locked they\'re restricted (just the app and its lock-screen text, whatever your lock screen is set to show); unlock with the fingerprint to see the rest.</string>
+    <string name="panel_controls">Quick controls</string>
+    <string name="panel_controls_help">Swipe down on the clock face. Choose and order the controls below. Home Assistant and VPN work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it. Android doesn\'t let apps switch Wi-Fi, mobile data or Bluetooth.</string>
+    <string-array name="quick_names">
+        <item>Flashlight</item>
+        <item>Do Not Disturb</item>
+        <item>Sound mode (ring, vibrate, silent)</item>
+        <item>Media volume</item>
+        <item>-</item>
+        <item>-</item>
+        <item>-</item>
+        <item>WireGuard (WG Tunnel)</item>
+        <item>Motorola\'s own screen</item>
+    </string-array>
+    <string name="quick_home">Home Assistant: %1$s</string>
+    <string name="quick_not_set_up">%1$s (not set up)</string>
+    <string name="wg_title">WireGuard</string>
+    <string name="wg_help">Uses WG Tunnel\'s remote control: turn on Remote control in WG Tunnel\'s advanced settings, then copy its key and your tunnel\'s name here.</string>
+    <string name="wg_tunnel_hint">Tunnel name, as in WG Tunnel</string>
+    <string name="wg_key_hint">Remote control key</string>
+    <string name="wg_save">Save WireGuard</string>
+    <string name="wg_saved">Saved.</string>
+    <string name="notices_needs_access">Needs notification access: open LCD Clock on the inside screen</string>
+    <string name="notices_locked">Unlock to see notifications</string>
+    <string name="notices_none">No notifications</string>
+    <string name="notices_hidden">Contents hidden</string>
+    <string name="notices_group">%1$s  (%2$d)</string>
+    <string name="notices_now">now</string>
+    <string name="notices_minutes">%1$d min</string>
+    <string name="app_intro">Your razr\'s outside screen: the LCD Digits clock face, and the pages you swipe to from it.</string>
+    <string name="colour_note">The colour is chosen in Clock styles: four presets, or Motorola\'s custom colours.</string>
+    <string name="open_clock_styles">Open Clock styles</string>
+    <string name="setup_title">Setup</string>
+    <string name="setup_face">LCD Digits is the clock style</string>
+    <string name="setup_face_fix">Choose LCD Digits in Clock styles. If you already have, wake the outside screen once.</string>
+    <string name="setup_button">Cover button service is on</string>
+    <string name="setup_button_fix">Lets volume holds and the clock face open the pages: turn on \"LCD Clock cover button\" in Accessibility.</string>
+    <string name="setup_music">Notification access is on</string>
+    <string name="setup_music_fix">Lets the music tabs see and control what\'s playing.</string>
+    <string name="setup_permissions">Microphone, calendar, location and audio files allowed</string>
+    <string name="setup_permissions_fix">For the recorder (and other apps\' recordings in Recordings), calendar and weather pages, and the timer\'s notification.</string>
+    <string name="open">Open</string>
+    <string name="turn_on">Turn on</string>
+    <string name="allow">Allow</string>
+    <string name="pages_title">Pages</string>
+    <string name="pages_help">In the order you swipe through them on the outside screen, after the clock face. Each has its own screen timeout.</string>
+    <string name="page_face">Clock face</string>
+    <string name="page_face_help">LCD Clock\'s own copy of the face, put up when the outside screen wakes: swipe left or right for the pages, up or down for Motorola\'s face, panels and notifications. The padlock above the alarm bell is lit while the phone is locked; touch the fingerprint sensor to unlock, as on Motorola\'s face.</string>
+    <string name="page_show">Show %1$s</string>
+    <string name="timeout_dialog_title">%1$s: screen off after</string>
+    <string name="ha_title">Home Assistant</string>
+    <string-array name="tab_help">
+        <item>LCD Clock\'s own countdown timer: it keeps running with the screen off and rings on the outside screen. Hold volume-down to open it.</item>
+        <item>A daily alarm: tap the bell to turn it on or off.</item>
+        <item>Your events for the next 7 days.</item>
+        <item>The forecast for your approximate location, from Open-Meteo.</item>
+        <item>LCD Clock\'s own recorder: records even with the screen off and the phone locked, saving to Recordings. Playing and LIST (every recording in Recordings) need the phone unlocked.</item>
+        <item>Hold volume-up to open it. Set up its buttons below; it shows once one is set up. The buttons work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it.</item>
+        <item>A tab per app with music, showing the app\'s icon. Opens when music starts.</item>
+    </string-array>
+    <string-array name="tab_names">
+        <item>Timer</item>
+        <item>Alarm</item>
+        <item>Calendar</item>
+        <item>Weather</item>
+        <item>Recorder</item>
+        <item>Home Assistant</item>
+        <item>Music (a tab per app)</item>
+    </string-array>
+    <string name="tab_up">Move %1$s up</string>
+    <string name="tab_down">Move %1$s down</string>
+    <string name="recordings_title">Recordings</string>
+    <string name="recordings_help">Everything in your phone\'s Recordings folder, newest first: LCD Clock\'s own and any other recorder app\'s. They\'re ordinary audio files, so other apps can open them too.</string>
+    <string name="recordings_open">Open recordings</string>
+    <string name="recordings_open_folder">Open the folder in Files</string>
+    <string name="recordings_folder_is">They\'re in %1$s on your phone\'s storage.</string>
+    <string name="recordings_none">No recordings yet. Record one on the outside screen\'s RECORDER page.</string>
+    <string name="recordings_none_cover">No recordings yet</string>
+    <string name="recordings_play">Play</string>
+    <string name="recordings_pause">Pause</string>
+    <string name="recordings_rename">Rename</string>
+    <string name="recordings_share">Share</string>
+    <string name="recordings_delete">Delete</string>
+    <string name="recordings_delete_title">Delete %1$s?</string>
+    <string name="recordings_delete_message">The recording is removed from your phone.</string>
+    <string name="recordings_cant_play">Couldn\'t play that recording.</string>
+    <string name="recordings_cant_rename">Couldn\'t rename it.</string>
+    <string name="recordings_cant_delete">Couldn\'t delete it.</string>
+    <string name="recordings_cant_share">Couldn\'t share it.</string>
+    <string name="recording">Recording</string>
+    <string name="recording_channel">Recording</string>
+    <string name="recorder_needs_mic">Needs microphone access: open LCD Clock on the inside screen</string>
+    <string name="recorder_recording">Recording to Recordings</string>
+    <string name="recorder_last">Last recording, in Recordings</string>
+    <string name="recorder_empty">Tap the red button to record</string>
+    <string name="calendar_needs_access">Needs calendar access: open LCD Clock on the inside screen</string>
+    <string name="calendar_empty">Nothing in the next 7 days</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_tomorrow">Tomorrow</string>
+    <string name="weather_needs_location">Needs location access: open LCD Clock on the inside screen</string>
+    <string name="weather_loading">Getting the forecast…</string>
+    <string name="cover_timeout_button">Screen off after: %1$s</string>
+    <string name="cover_timeout_phone">Same as the phone (%1$s)</string>
+    <string name="seconds">%1$d seconds</string>
+    <string name="minutes">%1$d min</string>
+    <string name="media_listener_label">LCD Clock music page</string>
+    <string name="home_help">With the phone closed, hold volume-up to open these three icon buttons on the outside screen. Each button runs its Home Assistant actions using the Home Assistant app\'s own login; add two actions to one button to toggle two things at once.</string>
+    <string-array name="home_slots">
+        <item>Left button: monitor</item>
+        <item>Centre button: lamp</item>
+        <item>Right button: fan</item>
+    </string-array>
+    <string name="home_add">Add action</string>
+    <string name="home_test">Test</string>
+    <string name="home_remove">Remove</string>
+    <string name="home_none">No actions yet.</string>
+    <string name="ha_connection_title">Home Assistant connection (shows on/off)</string>
+    <string name="ha_connection_help">With a long-lived access token (Home Assistant → your profile → Security), each HOME icon lights while any of its entities is on, and tapping switches them all off, or all on. Buttons without entities keep using their widget actions.</string>
+    <string name="ha_server_hint">Server address, e.g. https://…</string>
+    <string name="ha_token_hint">Long-lived access token</string>
+    <string name="ha_token_saved_hint">Token saved; paste a new one to replace it</string>
+    <string name="ha_save_check">Save &amp; check</string>
+    <string name="ha_checking">Checking…</string>
+    <string name="ha_connected">Connected.</string>
+    <string name="ha_check_failed">Couldn\'t connect: %1$s</string>
+    <string name="ha_token_saved">Token saved.</string>
+    <string name="ha_no_token">No token yet.</string>
+    <string name="ha_choose_entities">Choose entities</string>
+    <string name="ha_entities">Entities: %1$s</string>
+    <string name="ha_no_entities">No entities: uses the widget actions below.</string>
+    <string name="ha_token_first">Save a token above first.</string>
+    <string name="ha_list_failed">Couldn\'t get the entity list from Home Assistant.</string>
+    <string name="ha_not_installed">The Home Assistant app isn\'t installed.</string>
+</resources>

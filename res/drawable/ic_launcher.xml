@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Black tile with a seven-segment "8" -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#000000" android:pathData="M8,0h32a8,8 0,0 1,8 8v32a8,8 0,0 1,-8 8h-32a8,8 0,0 1,-8 -8v-32a8,8 0,0 1,8 -8z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M17,9l2,-2h10l2,2l-2,2h-10z M32,10l2,2v9l-2,2l-2,-2v-9z M32,25l2,2v9l-2,2l-2,-2v-9z M17,39l2,-2h10l2,2l-2,2h-10z M16,25l2,2v9l-2,2l-2,-2v-9z M16,10l2,2v9l-2,2l-2,-2v-9z M17,24l2,-2h10l2,2l-2,2h-10z" />
+</vector>
