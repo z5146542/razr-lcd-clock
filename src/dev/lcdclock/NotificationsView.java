@@ -22,7 +22,7 @@ import java.util.Set;
  * The notifications panel, swiped up from LCD Clock's clock face: two rows to the screen (ROWS),
  * newest first, each with its app's icon, title and text (each scrolling when long) and time, and × to
  * dismiss; rows new since the panel last showed them are tinted with the inverse of the clock
- * colour (the face's bubble flashes for them). An app with several notifications is one row (its name, how many, and the newest);
+ * colour (the face's bubble is lit for them). An app with several notifications is one row (its name, how many, and the newest);
  * tapping it opens the rest underneath, and its × dismisses them all. Tapping a notification opens
  * its own page: the app, time, title and all of its text (every message of a conversation), wrapped,
  * drag to read on; BACK or a drag down from the top returns to the list. CLEAR dismisses everything;
@@ -189,9 +189,8 @@ final class NotificationsView extends CoverPage {
             float cy = rowTop + rowH / 2;
             RectF rowRect = new RectF(bx, rowTop, bx + bw, rowTop + rowH);
             if (pressed == ROW + i || isNew(row)) {
-                // Pressed, or new since the panel last showed it: tinted with the bubble's flash colour.
-                fill.setColor(pressed == ROW + i ? SegmentPainter.dim(color)
-                        : (NoticeDot.inverse(color) & 0x00FFFFFF) | 0x55000000);
+                // Pressed, or new since the panel last showed it: tinted with the clock colour's inverse.
+                fill.setColor(pressed == ROW + i ? SegmentPainter.dim(color) : (~color & 0x00FFFFFF) | 0x55000000);
                 canvas.drawRoundRect(rowRect.left + pad * 0.5f, rowRect.top + 2, rowRect.right - pad * 0.5f,
                         rowRect.bottom - 2, rowH * 0.2f, rowH * 0.2f, fill);
             }
