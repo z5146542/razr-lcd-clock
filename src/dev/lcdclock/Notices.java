@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Person;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -23,8 +24,10 @@ import android.util.Log;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * The notifications the cover's notifications panel lists and the face's dot counts, read
@@ -35,6 +38,10 @@ import java.util.Map;
  * content would, whatever the phone's own lock screen is set to: private ones (most apps') as the
  * app's public version or just "Contents hidden", secret ones not at all, and nothing if the lock
  * screen hides notifications. Unlocking (the fingerprint works with the phone closed) shows everything.
+ *
+ * <p>It also remembers which notifications the panel has shown (by key and time, kept in Prefs),
+ * so new ones, and old ones updated since (a new message), can be told apart: the face's bubble
+ * flashes for them, and the panel tints their rows while it's open.
  */
 final class Notices {
     static final class Item {
@@ -56,6 +63,9 @@ final class Notices {
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static final List<Runnable> listeners = new ArrayList<>();
     private static final Map<String, String> appNames = new HashMap<>();
+    private static final String SEEN = "notices_seen";
+    /** "key|when" of each notification the panel has shown; null until read from Prefs. */
+    private static Set<String> seen;
 
     private Notices() {
     }
@@ -206,6 +216,79 @@ final class Notices {
         }
         CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
         return text == null ? "" : text.toString().trim();
+    }
+
+    /** A notification as the panel last showed it: its key and time (which a new message changes). */
+    static String id(Item item) {
+        return item.key + "|" + item.when;
+    }
+
+    private static Set<String> seen(Context context) {
+        if (seen == null) {
+            SharedPreferences prefs = Prefs.get(context);
+            if (prefs.contains(SEEN)) {
+                seen = new HashSet<>(prefs.getStringSet(SEEN, Collections.emptySet()));
+            }
+        }
+        return seen;
+    }
+
+    /**
+     * The ids of those the panel hasn't shown yet: posted, or updated, since it last did. The very
+     * first time (nothing remembered yet), everything already there counts as shown.
+     */
+    static Set<String> unseen(Context context, List<Item> items) {
+        Set<String> known = seen(context);
+        if (known == null) {
+            markSeen(context, items);
+            return Collections.emptySet();
+        }
+        Set<String> fresh = new HashSet<>();
+        for (Item item : items) {
+            if (!known.contains(id(item))) {
+                fresh.add(id(item));
+            }
+        }
+        return fresh;
+    }
+
+    /** The panel has shown these. Forgets their older versions, and notifications that have gone. */
+    static void markSeen(Context context, List<Item> items) {
+        Set<String> known = seen(context);
+        Set<String> next = new HashSet<>(known == null ? Collections.emptySet() : known);
+        Set<String> keys = new HashSet<>();
+        for (Item item : items) {
+            keys.add(item.key);
+        }
+        Set<String> active = activeKeys();
+        next.removeIf(id -> {
+            String key = id.substring(0, id.lastIndexOf('|'));
+            return keys.contains(key) || active != null && !active.contains(key);
+        });
+        for (Item item : items) {
+            next.add(id(item));
+        }
+        if (!next.equals(known)) {
+            seen = next;
+            Prefs.get(context).edit().putStringSet(SEEN, next).apply();
+        }
+    }
+
+    /** Every notification's key, shown in the panel or not; null without notification access. */
+    private static Set<String> activeKeys() {
+        MediaListener listener = MediaListener.connected;
+        if (listener == null) {
+            return null;
+        }
+        try {
+            Set<String> keys = new HashSet<>();
+            for (StatusBarNotification sbn : listener.getActiveNotifications()) {
+                keys.add(sbn.getKey());
+            }
+            return keys;
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     static int count(Context context) {

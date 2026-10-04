@@ -7,16 +7,34 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.view.View;
 
+import java.util.List;
+
 /**
  * The notification indicator under LCD Clock's own clock face, where Motorola's face has its
  * dot: a speech bubble, lit in the clock colour while the notifications panel has anything to
  * list (so not while the lock screen hides notifications), unlit segments otherwise, like the
- * face's alarm bell. Swipe up on the face to see them.
+ * face's alarm bell. While some are new to the panel (Notices.unseen) it flashes between the
+ * clock colour and its inverse until the panel is opened. Swipe up on the face to see them.
  */
 final class NoticeDot extends View {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path bubble = new Path();
     private boolean any;
+    /** Something the panel hasn't shown yet: flashing. */
+    private boolean fresh;
+    private boolean inverse;
+    private static final long FLASH_MS = 500;
+
+    private final Runnable flash = new Runnable() {
+        @Override
+        public void run() {
+            inverse = !inverse;
+            invalidate();
+            if (fresh) {
+                postDelayed(this, FLASH_MS);
+            }
+        }
+    };
 
     private final Runnable changed = this::refresh;
 
@@ -44,15 +62,32 @@ final class NoticeDot extends View {
     protected void onDetachedFromWindow() {
         Notices.unlisten(changed);
         removeCallbacks(tick);
+        removeCallbacks(flash);
         super.onDetachedFromWindow();
     }
 
     private void refresh() {
-        boolean now = Notices.count(getContext()) > 0;
+        List<Notices.Item> items = Notices.list(getContext());
+        boolean now = !items.isEmpty();
+        boolean nowFresh = !Notices.unseen(getContext(), items).isEmpty();
+        if (nowFresh != fresh) {
+            fresh = nowFresh;
+            inverse = false;
+            removeCallbacks(flash);
+            if (fresh) {
+                postDelayed(flash, FLASH_MS);
+            }
+            invalidate();
+        }
         if (now != any) {
             any = now;
             invalidate();
         }
+    }
+
+    /** The clock colour's opposite, for flashing against it. */
+    static int inverse(int color) {
+        return 0xFF000000 | (~color & 0x00FFFFFF);
     }
 
     @Override
@@ -72,7 +107,7 @@ final class NoticeDot extends View {
         bubble.lineTo(cx - s * 0.5f, cy + s * 0.62f);
         bubble.lineTo(cx - s * 0.1f, cy + s * 0.25f);
         bubble.close();
-        fill.setColor(any ? color : SegmentPainter.dim(color));
+        fill.setColor(fresh ? (inverse ? inverse(color) : color) : any ? color : SegmentPainter.dim(color));
         canvas.drawPath(bubble, fill);
         fill.setColor(Color.BLACK);
         float t = s * 0.12f;
