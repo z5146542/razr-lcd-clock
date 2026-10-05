@@ -159,6 +159,10 @@ final class QuickView extends CoverPage {
                 on = QuickControls.nightOn(context);
                 name = "NIGHT";
                 break;
+            case QuickControls.BEDTIME:
+                on = QuickControls.bedtimeOn();
+                name = "BEDTIME";
+                break;
             case QuickControls.WIREGUARD:
                 on = QuickControls.vpnOn(context);
                 name = "VPN";
@@ -254,6 +258,14 @@ final class QuickView extends CoverPage {
                 canvas.drawRect(cx - s * 0.09f, cy - s * 0.46f, cx + s * 0.09f, cy - s * 0.36f, fill);
                 canvas.drawRect(cx - s * 0.12f, cy + s * 0.05f - t * 0.4f, cx + s * 0.12f, cy + s * 0.05f + t * 0.4f, fill);
                 canvas.drawRect(cx - t * 0.4f, cy + s * 0.05f - s * 0.12f, cx + t * 0.4f, cy + s * 0.05f + s * 0.12f, fill);
+                break;
+            }
+            case QuickControls.BEDTIME: { // a bed: headboard, pillow, covers, mattress, foot
+                canvas.drawRect(cx - s * 0.46f, cy - s * 0.3f, cx - s * 0.36f, cy + s * 0.32f, fill);
+                canvas.drawRoundRect(cx - s * 0.32f, cy - s * 0.1f, cx - s * 0.1f, cy + s * 0.02f, t * 0.6f, t * 0.6f, fill);
+                canvas.drawRoundRect(cx - s * 0.06f, cy - s * 0.16f, cx + s * 0.46f, cy + s * 0.02f, t, t, fill);
+                canvas.drawRect(cx - s * 0.36f, cy + s * 0.06f, cx + s * 0.46f, cy + s * 0.18f, fill);
+                canvas.drawRect(cx + s * 0.36f, cy + s * 0.18f, cx + s * 0.46f, cy + s * 0.32f, fill);
                 break;
             }
             case QuickControls.NIGHT: { // a crescent moon
@@ -359,6 +371,12 @@ final class QuickView extends CoverPage {
                 break;
             case QuickControls.NIGHT:
                 QuickControls.toggleNight(context);
+                break;
+            case QuickControls.BEDTIME:
+                if (!QuickControls.endBedtime()) {
+                    Lock.refuse(context); // not on, and only Wellbeing can start it
+                    return false;
+                }
                 break;
             case QuickControls.WIREGUARD:
                 QuickControls.toggleWireGuard(context);

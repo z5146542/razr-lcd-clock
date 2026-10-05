@@ -1,7 +1,9 @@
 package dev.lcdclock;
 
 import android.Manifest;
+import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -16,15 +18,19 @@ import android.net.NetworkCapabilities;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
+import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * What the quick controls panel can switch, and how: the flashlight, an SOS signal with it
  * (SosService), battery saver and Night Light (system settings, once Android's "write secure
- * settings" permission has been given from a computer: canWriteSecure), Do Not Disturb (allowed to
+ * settings" permission has been given from a computer: canWriteSecure), Digital Wellbeing's Bedtime
+ * mode (shown, and ended through its own notification's Turn off; nothing outside Wellbeing can
+ * start it), Do Not Disturb (allowed to
  * apps with notification access), the ring mode, media volume, the Home Assistant buttons, a
  * WireGuard tunnel through the WG Tunnel app's remote control, and leaving for Motorola's own
  * screen. Wi-Fi, mobile data and Bluetooth aren't here: Android doesn't let apps switch them.
@@ -38,13 +44,17 @@ final class QuickControls {
     static final String VOLUME = "volume";
     static final String SAVER = "saver";
     static final String NIGHT = "night";
+    static final String BEDTIME = "bedtime";
     static final String HOME_PREFIX = "ha";
     static final String WIREGUARD = "wireguard";
     static final String MOTOROLA = "moto";
     /** Every control in its first order. */
-    static final List<String> ALL = Arrays.asList(TORCH, SOS, DND, SOUND, VOLUME, SAVER, NIGHT, HOME_PREFIX + 0, HOME_PREFIX + 1,
+    static final List<String> ALL = Arrays.asList(TORCH, SOS, DND, SOUND, VOLUME, SAVER, NIGHT, BEDTIME, HOME_PREFIX + 0, HOME_PREFIX + 1,
             HOME_PREFIX + 2, WIREGUARD, MOTOROLA);
 
+    private static final String WELLBEING = "com.google.android.apps.wellbeing";
+    /** The channel of Wellbeing's "Bedtime mode is on" notification. */
+    private static final String BEDTIME_CHANNEL = "wind_down_notifications";
     private static final String WG_PACKAGE = "com.zaneschepke.wireguardautotunnel";
     private static final ComponentName WG_REMOTE = new ComponentName(WG_PACKAGE,
             WG_PACKAGE + ".core.broadcast.RemoteControlReceiver");
@@ -74,6 +84,14 @@ final class QuickControls {
         }
         if (SAVER.equals(control) || NIGHT.equals(control)) {
             return canWriteSecure(context);
+        }
+        if (BEDTIME.equals(control)) {
+            try {
+                context.getPackageManager().getPackageInfo(WELLBEING, 0);
+                return true;
+            } catch (PackageManager.NameNotFoundException e) {
+                return false;
+            }
         }
         if (WIREGUARD.equals(control)) {
             return !Prefs.get(context).getString(Prefs.WG_TUNNEL, "").isEmpty()
@@ -189,6 +207,57 @@ final class QuickControls {
             }
         } catch (SecurityException e) {
             Log.w(Binders.TAG, "can't switch " + name + ": no write secure settings permission", e);
+        }
+    }
+
+    // ---- Digital Wellbeing's Bedtime mode ----
+
+    /**
+     * The Turn off button ("Turn off", or "Turn off for now" when a schedule started it) of
+     * Wellbeing's "Bedtime mode is on" notification; null while Bedtime mode isn't on. Wellbeing
+     * keeps its own switches private, so this button is the only way in from another app.
+     */
+    private static Notification.Action bedtimeOff() {
+        MediaListener listener = MediaListener.connected;
+        if (listener == null) {
+            return null;
+        }
+        try {
+            for (StatusBarNotification sbn : listener.getActiveNotifications()) {
+                Notification n = sbn.getNotification();
+                if (!WELLBEING.equals(sbn.getPackageName()) || !BEDTIME_CHANNEL.equals(n.getChannelId())
+                        || n.actions == null) {
+                    continue;
+                }
+                for (Notification.Action action : n.actions) {
+                    if (action.title != null && action.actionIntent != null
+                            && action.title.toString().toLowerCase(Locale.ROOT).startsWith("turn off")) {
+                        return action;
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            Log.w(Binders.TAG, "can't read Wellbeing's notification", e);
+        }
+        return null;
+    }
+
+    static boolean bedtimeOn() {
+        return bedtimeOff() != null;
+    }
+
+    /** Ends Bedtime mode with its notification's Turn off; false if it isn't on. */
+    static boolean endBedtime() {
+        Notification.Action off = bedtimeOff();
+        if (off == null) {
+            return false;
+        }
+        try {
+            off.actionIntent.send();
+            Log.d(Binders.TAG, "bedtime: pressed \"" + off.title + "\"");
+            return true;
+        } catch (PendingIntent.CanceledException e) {
+            return false;
         }
     }
 
