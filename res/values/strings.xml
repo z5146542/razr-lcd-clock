@@ -20,6 +20,8 @@
         <item>Do Not Disturb</item>
         <item>Sound mode (ring, vibrate, silent)</item>
         <item>Media volume</item>
+        <item>Battery saver</item>
+        <item>Night Light</item>
         <item>-</item>
         <item>-</item>
         <item>-</item>
@@ -48,6 +50,8 @@
         <item>Music</item>
         <item>Flashlight on/off</item>
     </string-array>
+    <string name="quick_needs_permission">%1$s (needs a permission, below)</string>
+    <string name="quick_secure_help">Battery saver and Night Light need a permission Android only gives from a computer, once: with the phone connected over USB debugging, run\nadb shell pm grant dev.lcdclock android.permission.WRITE_SECURE_SETTINGS</string>
     <string name="quick_home">Home Assistant: %1$s</string>
     <string name="quick_not_set_up">%1$s (not set up)</string>
     <string name="wg_title">WireGuard</string>

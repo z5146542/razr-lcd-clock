@@ -124,6 +124,12 @@ public class PreviewActivity extends Activity {
         quickRows.setOrientation(LinearLayout.VERTICAL);
         controls.addView(quickRows);
         refreshQuick();
+        if (!QuickControls.canWriteSecure(this)) {
+            TextView secureHelp = text(getString(R.string.quick_secure_help), 13);
+            secureHelp.setTextIsSelectable(true);
+            secureHelp.setPadding(0, Math.round(8 * dp), 0, 0);
+            controls.addView(secureHelp);
+        }
         TextView wgTitle = text(getString(R.string.wg_title), 15);
         wgTitle.setTextColor(Color.WHITE);
         wgTitle.setPadding(0, Math.round(12 * dp), 0, Math.round(2 * dp));
@@ -377,7 +383,9 @@ public class PreviewActivity extends Activity {
             LinearLayout row = new LinearLayout(this);
             row.setGravity(Gravity.CENTER_VERTICAL);
             Switch show = new Switch(this);
-            show.setText(QuickControls.usable(this, control) ? name : getString(R.string.quick_not_set_up, name));
+            boolean secure = QuickControls.SAVER.equals(control) || QuickControls.NIGHT.equals(control);
+            show.setText(QuickControls.usable(this, control) ? name
+                    : getString(secure ? R.string.quick_needs_permission : R.string.quick_not_set_up, name));
             show.setTextColor(QuickControls.usable(this, control) ? Color.WHITE : 0xFF9A9A9A);
             show.setTextSize(15);
             show.setChecked(Prefs.quickShown(this, control));

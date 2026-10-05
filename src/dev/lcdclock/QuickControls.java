@@ -1,9 +1,11 @@
 package dev.lcdclock;
 
+import android.Manifest;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -11,6 +13,8 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.util.Log;
 
@@ -19,7 +23,8 @@ import java.util.List;
 
 /**
  * What the quick controls panel can switch, and how: the flashlight, an SOS signal with it
- * (SosService), Do Not Disturb (allowed to
+ * (SosService), battery saver and Night Light (system settings, once Android's "write secure
+ * settings" permission has been given from a computer: canWriteSecure), Do Not Disturb (allowed to
  * apps with notification access), the ring mode, media volume, the Home Assistant buttons, a
  * WireGuard tunnel through the WG Tunnel app's remote control, and leaving for Motorola's own
  * screen. Wi-Fi, mobile data and Bluetooth aren't here: Android doesn't let apps switch them.
@@ -31,11 +36,13 @@ final class QuickControls {
     static final String DND = "dnd";
     static final String SOUND = "sound";
     static final String VOLUME = "volume";
+    static final String SAVER = "saver";
+    static final String NIGHT = "night";
     static final String HOME_PREFIX = "ha";
     static final String WIREGUARD = "wireguard";
     static final String MOTOROLA = "moto";
     /** Every control in its first order. */
-    static final List<String> ALL = Arrays.asList(TORCH, SOS, DND, SOUND, VOLUME, HOME_PREFIX + 0, HOME_PREFIX + 1,
+    static final List<String> ALL = Arrays.asList(TORCH, SOS, DND, SOUND, VOLUME, SAVER, NIGHT, HOME_PREFIX + 0, HOME_PREFIX + 1,
             HOME_PREFIX + 2, WIREGUARD, MOTOROLA);
 
     private static final String WG_PACKAGE = "com.zaneschepke.wireguardautotunnel";
@@ -64,6 +71,9 @@ final class QuickControls {
         int slot = homeSlot(control);
         if (slot >= 0) {
             return HomeAssistant.isConfigured(context, slot);
+        }
+        if (SAVER.equals(control) || NIGHT.equals(control)) {
+            return canWriteSecure(context);
         }
         if (WIREGUARD.equals(control)) {
             return !Prefs.get(context).getString(Prefs.WG_TUNNEL, "").isEmpty()
@@ -127,6 +137,58 @@ final class QuickControls {
             context.getSystemService(CameraManager.class).setTorchMode(torchCamera, !torchOn);
         } catch (CameraAccessException | IllegalArgumentException e) {
             Log.w(Binders.TAG, "can't switch the flashlight", e);
+        }
+    }
+
+    // ---- battery saver and Night Light ----
+
+    /**
+     * Android lets apps switch battery saver and Night Light only with "write secure settings",
+     * which can't be asked for in the app; it's given once from a computer:
+     * adb shell pm grant dev.lcdclock android.permission.WRITE_SECURE_SETTINGS
+     */
+    static boolean canWriteSecure(Context context) {
+        return context.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Battery saver is switched on: its setting, which stays on while charging even though Android
+     * holds battery saver back until the phone is unplugged.
+     */
+    static boolean saverOn(Context context) {
+        try {
+            return Settings.Global.getInt(context.getContentResolver(), "low_power") != 0;
+        } catch (Settings.SettingNotFoundException | SecurityException e) {
+            return context.getSystemService(PowerManager.class).isPowerSaveMode();
+        }
+    }
+
+    static void toggleSaver(Context context) {
+        putSetting(context, true, "low_power", !saverOn(context));
+    }
+
+    static boolean nightOn(Context context) {
+        try {
+            return Settings.Secure.getInt(context.getContentResolver(), "night_display_activated", 0) != 0;
+        } catch (SecurityException e) {
+            return false;
+        }
+    }
+
+    static void toggleNight(Context context) {
+        putSetting(context, false, "night_display_activated", !nightOn(context));
+    }
+
+    /** A system setting that turns a feature on or off; Global when `global`, else Secure. */
+    private static void putSetting(Context context, boolean global, String name, boolean on) {
+        try {
+            if (global) {
+                Settings.Global.putInt(context.getContentResolver(), name, on ? 1 : 0);
+            } else {
+                Settings.Secure.putInt(context.getContentResolver(), name, on ? 1 : 0);
+            }
+        } catch (SecurityException e) {
+            Log.w(Binders.TAG, "can't switch " + name + ": no write secure settings permission", e);
         }
     }
 

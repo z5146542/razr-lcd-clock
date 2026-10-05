@@ -151,6 +151,14 @@ final class QuickView extends CoverPage {
                 on = true;
                 name = "MEDIA";
                 break;
+            case QuickControls.SAVER:
+                on = QuickControls.saverOn(context);
+                name = "SAVER";
+                break;
+            case QuickControls.NIGHT:
+                on = QuickControls.nightOn(context);
+                name = "NIGHT";
+                break;
             case QuickControls.WIREGUARD:
                 on = QuickControls.vpnOn(context);
                 name = "VPN";
@@ -237,6 +245,24 @@ final class QuickView extends CoverPage {
                     canvas.drawRoundRect(x, cy - h / 2, x + mark * unit, cy + h / 2, h / 2, h / 2, fill);
                     x += (mark + 1) * unit;
                 }
+                break;
+            }
+            case QuickControls.SAVER: { // a battery with a plus
+                outline.setStrokeWidth(t * 0.8f);
+                outline.setColor(ink);
+                canvas.drawRoundRect(cx - s * 0.22f, cy - s * 0.36f, cx + s * 0.22f, cy + s * 0.46f, t, t, outline);
+                canvas.drawRect(cx - s * 0.09f, cy - s * 0.46f, cx + s * 0.09f, cy - s * 0.36f, fill);
+                canvas.drawRect(cx - s * 0.12f, cy + s * 0.05f - t * 0.4f, cx + s * 0.12f, cy + s * 0.05f + t * 0.4f, fill);
+                canvas.drawRect(cx - t * 0.4f, cy + s * 0.05f - s * 0.12f, cx + t * 0.4f, cy + s * 0.05f + s * 0.12f, fill);
+                break;
+            }
+            case QuickControls.NIGHT: { // a crescent moon
+                Path moon = new Path();
+                moon.addCircle(cx, cy, s * 0.36f, Path.Direction.CW);
+                Path bite = new Path();
+                bite.addCircle(cx + s * 0.2f, cy - s * 0.14f, s * 0.3f, Path.Direction.CW);
+                moon.op(bite, Path.Op.DIFFERENCE);
+                canvas.drawPath(moon, fill);
                 break;
             }
             case QuickControls.DND: { // a no-entry sign
@@ -327,6 +353,12 @@ final class QuickView extends CoverPage {
                 break;
             case QuickControls.VOLUME:
                 QuickControls.adjustVolume(context, true);
+                break;
+            case QuickControls.SAVER:
+                QuickControls.toggleSaver(context);
+                break;
+            case QuickControls.NIGHT:
+                QuickControls.toggleNight(context);
                 break;
             case QuickControls.WIREGUARD:
                 QuickControls.toggleWireGuard(context);
