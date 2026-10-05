@@ -18,7 +18,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * What the quick controls panel can switch, and how: the flashlight, Do Not Disturb (allowed to
+ * What the quick controls panel can switch, and how: the flashlight, an SOS signal with it
+ * (SosService), Do Not Disturb (allowed to
  * apps with notification access), the ring mode, media volume, the Home Assistant buttons, a
  * WireGuard tunnel through the WG Tunnel app's remote control, and leaving for Motorola's own
  * screen. Wi-Fi, mobile data and Bluetooth aren't here: Android doesn't let apps switch them.
@@ -26,6 +27,7 @@ import java.util.List;
  */
 final class QuickControls {
     static final String TORCH = "torch";
+    static final String SOS = "sos";
     static final String DND = "dnd";
     static final String SOUND = "sound";
     static final String VOLUME = "volume";
@@ -33,7 +35,7 @@ final class QuickControls {
     static final String WIREGUARD = "wireguard";
     static final String MOTOROLA = "moto";
     /** Every control in its first order. */
-    static final List<String> ALL = Arrays.asList(TORCH, DND, SOUND, VOLUME, HOME_PREFIX + 0, HOME_PREFIX + 1,
+    static final List<String> ALL = Arrays.asList(TORCH, SOS, DND, SOUND, VOLUME, HOME_PREFIX + 0, HOME_PREFIX + 1,
             HOME_PREFIX + 2, WIREGUARD, MOTOROLA);
 
     private static final String WG_PACKAGE = "com.zaneschepke.wireguardautotunnel";
@@ -72,9 +74,16 @@ final class QuickControls {
 
     // ---- flashlight ----
 
+    /** The flashlight is on as a light (not blinking SOS). */
     static boolean torchOn(Context context) {
         watchTorch(context);
-        return torchOn;
+        return torchOn && !SosService.isRunning();
+    }
+
+    /** The camera with the flashlight, or null. */
+    static String torchCamera(Context context) {
+        watchTorch(context);
+        return torchCamera;
     }
 
     private static void watchTorch(Context context) {
@@ -104,15 +113,30 @@ final class QuickControls {
         }, null);
     }
 
+    /** On or off; while SOS is signalling, stops it and leaves the light on. */
     static void toggleTorch(Context context) {
         watchTorch(context);
         if (torchCamera == null) {
+            return;
+        }
+        if (SosService.isRunning()) {
+            SosService.stop(context, true);
             return;
         }
         try {
             context.getSystemService(CameraManager.class).setTorchMode(torchCamera, !torchOn);
         } catch (CameraAccessException | IllegalArgumentException e) {
             Log.w(Binders.TAG, "can't switch the flashlight", e);
+        }
+    }
+
+    // ---- SOS ----
+
+    static void toggleSos(Context context) {
+        if (SosService.isRunning()) {
+            SosService.stop(context, false);
+        } else {
+            SosService.start(context);
         }
     }
 

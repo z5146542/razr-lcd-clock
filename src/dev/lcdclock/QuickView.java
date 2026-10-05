@@ -132,6 +132,10 @@ final class QuickView extends CoverPage {
                 on = QuickControls.torchOn(context);
                 name = "LIGHT";
                 break;
+            case QuickControls.SOS:
+                on = SosService.isRunning();
+                name = "SOS";
+                break;
             case QuickControls.DND:
                 on = QuickControls.dndOn(context);
                 name = "DND";
@@ -220,6 +224,21 @@ final class QuickView extends CoverPage {
                 canvas.drawPath(icon, fill);
                 break;
             }
+            case QuickControls.SOS: { // ··· ——— ··· in Morse marks
+                float unit = s * 2.1f / 25; // S 5 units, gap 2, O 11, gap 2, S 5
+                float x = cx - unit * 12.5f;
+                float h = unit * 1.3f;
+                int[] marks = {1, 1, 1, 0, 3, 3, 3, 0, 1, 1, 1};
+                for (int mark : marks) {
+                    if (mark == 0) {
+                        x += unit; // the letter gap (2 units with the mark gap)
+                        continue;
+                    }
+                    canvas.drawRoundRect(x, cy - h / 2, x + mark * unit, cy + h / 2, h / 2, h / 2, fill);
+                    x += (mark + 1) * unit;
+                }
+                break;
+            }
             case QuickControls.DND: { // a no-entry sign
                 outline.setStrokeWidth(t);
                 outline.setColor(ink);
@@ -296,6 +315,9 @@ final class QuickView extends CoverPage {
         switch (control) {
             case QuickControls.TORCH:
                 QuickControls.toggleTorch(context);
+                break;
+            case QuickControls.SOS:
+                QuickControls.toggleSos(context);
                 break;
             case QuickControls.DND:
                 QuickControls.toggleDnd(context);

@@ -13,9 +13,10 @@
     <string name="panel_notices">Notifications</string>
     <string name="panel_notices_help">Swipe up on the clock face. Tap one to read all of it on its own page; dismiss one with ×, or CLEAR them all. While the phone is locked they\'re restricted (just the app and its lock-screen text, whatever your lock screen is set to show); unlock with the fingerprint to see the rest.</string>
     <string name="panel_controls">Quick controls</string>
-    <string name="panel_controls_help">Swipe down on the clock face. Choose and order the controls below. Home Assistant and VPN work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it. Android doesn\'t let apps switch Wi-Fi, mobile data or Bluetooth.</string>
+    <string name="panel_controls_help">Swipe down on the clock face. Choose and order the controls below. SOS flashes ··· ——— ··· with the flashlight until tapped again, even with the screen off or the phone locked. Home Assistant and VPN work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it. Android doesn\'t let apps switch Wi-Fi, mobile data or Bluetooth.</string>
     <string-array name="quick_names">
         <item>Flashlight</item>
+        <item>SOS signal (flashlight Morse code)</item>
         <item>Do Not Disturb</item>
         <item>Sound mode (ring, vibrate, silent)</item>
         <item>Media volume</item>
@@ -25,6 +26,8 @@
         <item>WireGuard (WG Tunnel)</item>
         <item>Motorola\'s own screen</item>
     </string-array>
+    <string name="sos_channel">SOS signal</string>
+    <string name="sos_on">SOS signal on</string>
     <string name="quick_home">Home Assistant: %1$s</string>
     <string name="quick_not_set_up">%1$s (not set up)</string>
     <string name="wg_title">WireGuard</string>

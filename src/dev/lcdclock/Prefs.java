@@ -87,9 +87,12 @@ final class Prefs {
                 order.add(control);
             }
         }
-        for (String control : QuickControls.ALL) {
+        // Controls added since the order was saved go after the one they follow by default.
+        for (int i = 0; i < QuickControls.ALL.size(); i++) {
+            String control = QuickControls.ALL.get(i);
             if (!order.contains(control)) {
-                order.add(control);
+                int after = i == 0 ? -1 : order.indexOf(QuickControls.ALL.get(i - 1));
+                order.add(after < 0 ? order.size() : after + 1, control);
             }
         }
         return order;
