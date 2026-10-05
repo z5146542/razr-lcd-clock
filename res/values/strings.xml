@@ -3,7 +3,7 @@
     <string name="app_name">LCD Clock</string>
     <string name="face_digits">LCD Digits</string>
     <string name="button_service_label">LCD Clock cover button</string>
-    <string name="button_service_description">With the phone closed, hold volume-down to open LCD Clock\'s alarm and timer on the outside display, or volume-up to open your Home Assistant buttons. Short presses still change the volume, and nothing happens while the phone is open.</string>
+    <string name="button_service_description">With the phone closed, hold a volume button to open the outside-screen page (or switch the flashlight) you chose for it in LCD Clock; at first volume-down opens the timer and volume-up your Home Assistant buttons. Short presses still change the volume, and nothing happens while the phone is open.</string>
     <string name="timer_done">Timer done</string>
     <string name="timer_done_channel">Timer done</string>
     <string name="stop">Stop</string>
@@ -28,6 +28,26 @@
     </string-array>
     <string name="sos_channel">SOS signal</string>
     <string name="sos_on">SOS signal on</string>
+    <string name="holds_title">Volume button holds</string>
+    <string name="holds_help">With the phone closed and the outside screen on, hold a volume button for a moment to jump straight to a page, or to switch the flashlight. Short presses still change the volume.</string>
+    <string name="hold_up">Hold volume up: %1$s</string>
+    <string name="hold_down">Hold volume down: %1$s</string>
+    <string name="hold_up_title">Hold volume up</string>
+    <string name="hold_down_title">Hold volume down</string>
+    <string-array name="hold_names">
+        <item>Nothing (volume only)</item>
+        <item>Clock face</item>
+        <item>Notifications</item>
+        <item>Quick controls</item>
+        <item>Timer</item>
+        <item>Alarm</item>
+        <item>Calendar</item>
+        <item>Weather</item>
+        <item>Recorder</item>
+        <item>Home Assistant</item>
+        <item>Music</item>
+        <item>Flashlight on/off</item>
+    </string-array>
     <string name="quick_home">Home Assistant: %1$s</string>
     <string name="quick_not_set_up">%1$s (not set up)</string>
     <string name="wg_title">WireGuard</string>
@@ -66,12 +86,12 @@
     <string name="timeout_dialog_title">%1$s: screen off after</string>
     <string name="ha_title">Home Assistant</string>
     <string-array name="tab_help">
-        <item>LCD Clock\'s own countdown timer: it keeps running with the screen off and rings on the outside screen. Hold volume-down to open it.</item>
+        <item>LCD Clock\'s own countdown timer: it keeps running with the screen off and rings on the outside screen.</item>
         <item>A daily alarm: tap the bell to turn it on or off.</item>
         <item>Your events for the next 7 days.</item>
         <item>The forecast for your approximate location, from Open-Meteo.</item>
         <item>LCD Clock\'s own recorder: records even with the screen off and the phone locked, saving to Recordings. Playing and LIST (every recording in Recordings) need the phone unlocked.</item>
-        <item>Hold volume-up to open it. Set up its buttons below; it shows once one is set up. The buttons work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it.</item>
+        <item>Your Home Assistant buttons. Set up its buttons below; it shows once one is set up. The buttons work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it.</item>
         <item>A tab per app with music, showing the app\'s icon. Opens when music starts.</item>
     </string-array>
     <string-array name="tab_names">
@@ -120,7 +140,7 @@
     <string name="seconds">%1$d seconds</string>
     <string name="minutes">%1$d min</string>
     <string name="media_listener_label">LCD Clock music page</string>
-    <string name="home_help">With the phone closed, hold volume-up to open these three icon buttons on the outside screen. Each button runs its Home Assistant actions using the Home Assistant app\'s own login; add two actions to one button to toggle two things at once.</string>
+    <string name="home_help">Three icon buttons on the outside screen\'s HOME page (a volume hold can open it; see Volume button holds). Each button runs its Home Assistant actions using the Home Assistant app\'s own login; add two actions to one button to toggle two things at once.</string>
     <string-array name="home_slots">
         <item>Left button: monitor</item>
         <item>Centre button: lamp</item>

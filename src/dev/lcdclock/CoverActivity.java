@@ -17,11 +17,11 @@ import java.util.List;
 /**
  * The outside-screen pages: FACE (LCD Clock's own copy of the clock face, while it's the chosen
  * face and the app's setting allows) first, then in the order chosen in the app (Prefs.tabOrder),
- * leaving out hidden ones: TIMER (volume-down hold, and when something rings), ALARM, CALENDAR,
- * WEATHER, RECORDER, HOME with the Home Assistant buttons (volume-up hold; only once set up) and a
+ * leaving out hidden ones: TIMER (also when something rings), ALARM, CALENDAR,
+ * WEATHER, RECORDER, HOME with the Home Assistant buttons (only once set up) and a
  * MUSIC page per app with a media session, its tab showing the app's icon (opened by Media when
  * music plays; a plain MUSIC page when there's none). A hidden page asked for directly (a volume
- * hold, a ringing alarm) still opens, without a tab. Swiping slides between them under the menu
+ * hold, chosen in the app, or a ringing alarm) still opens, without a tab. Swiping slides between them under the menu
  * row (CoverTabs), which stays put; tapping a tab switches straight to its page.
  *
  * <p>With FACE, the pages go round: a swipe left from the face reaches the first tab, a swipe right

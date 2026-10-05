@@ -21,6 +21,16 @@ final class Prefs {
     static final String TAB_ORDER = "tab_order";
     static final String TAB_HIDDEN = "tab_hidden";
     static final String QUICK_ORDER = "quick_order";
+    /** What holding volume up or down does with the phone closed: a page, HOLD_TORCH or HOLD_NONE. */
+    private static final String HOLD_UP = "hold_up";
+    private static final String HOLD_DOWN = "hold_down";
+    static final String HOLD_NONE = "none";
+    static final String HOLD_TORCH = "torch";
+    /** The volume-hold shortcuts, in the order the app lists them (R.array.hold_names). */
+    static final List<String> HOLD_ACTIONS = Arrays.asList(HOLD_NONE, CoverActivity.PAGE_FACE,
+            CoverActivity.PAGE_NOTICES, CoverActivity.PAGE_CONTROLS, CoverActivity.PAGE_CLOCK, CoverActivity.PAGE_ALARM,
+            CoverActivity.PAGE_CALENDAR, CoverActivity.PAGE_WEATHER, CoverActivity.PAGE_RECORDER,
+            CoverActivity.PAGE_HOME, CoverActivity.PAGE_MUSIC, HOLD_TORCH);
     static final String WG_TUNNEL = "wg_tunnel";
     static final String WG_KEY = "wg_key";
     /** Left from when RECORDER could record through Fossify Voice Recorder's widget (dropFossify). */
@@ -80,6 +90,16 @@ final class Prefs {
     }
 
     /** The quick controls in the order chosen in the app; ones added since go at the end. */
+    /** Holding volume up (`up`) or down: TIMER for down and HOME for up until changed in the app. */
+    static String holdAction(Context context, boolean up) {
+        String action = get(context).getString(up ? HOLD_UP : HOLD_DOWN, null);
+        return HOLD_ACTIONS.contains(action) ? action : up ? CoverActivity.PAGE_HOME : CoverActivity.PAGE_CLOCK;
+    }
+
+    static void setHoldAction(Context context, boolean up, String action) {
+        get(context).edit().putString(up ? HOLD_UP : HOLD_DOWN, action).apply();
+    }
+
     static List<String> quickOrder(Context context) {
         List<String> order = new ArrayList<>();
         for (String control : get(context).getString(QUICK_ORDER, "").split(",")) {

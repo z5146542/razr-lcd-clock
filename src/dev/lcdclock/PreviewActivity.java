@@ -143,6 +143,16 @@ public class PreviewActivity extends Activity {
             Toast.makeText(this, R.string.wg_saved, Toast.LENGTH_SHORT).show();
         }));
 
+        // What holding a volume button does.
+        column.addView(header(R.string.holds_title));
+        LinearLayout holds = card(column);
+        holds.addView(text(getString(R.string.holds_help), 14));
+        for (boolean up : new boolean[] {true, false}) {
+            Button choice = flatButton(holdLabel(up), null);
+            choice.setOnClickListener(v -> chooseHold(up, choice));
+            holds.addView(choice);
+        }
+
         // HOME's three buttons.
         column.addView(header(R.string.ha_title));
         LinearLayout ha = card(column);
@@ -405,6 +415,25 @@ public class PreviewActivity extends Activity {
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     Prefs.setBlackout(this, page, TIMEOUTS[which]);
                     button.setText(getString(R.string.cover_timeout_button, timeoutLabel(TIMEOUTS[which])));
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private String holdLabel(boolean up) {
+        String[] names = getResources().getStringArray(R.array.hold_names);
+        return getString(up ? R.string.hold_up : R.string.hold_down,
+                names[Prefs.HOLD_ACTIONS.indexOf(Prefs.holdAction(this, up))]);
+    }
+
+    private void chooseHold(boolean up, Button button) {
+        String[] names = getResources().getStringArray(R.array.hold_names);
+        new AlertDialog.Builder(this)
+                .setTitle(up ? R.string.hold_up_title : R.string.hold_down_title)
+                .setSingleChoiceItems(names, Prefs.HOLD_ACTIONS.indexOf(Prefs.holdAction(this, up)), (dialog, which) -> {
+                    Prefs.setHoldAction(this, up, Prefs.HOLD_ACTIONS.get(which));
+                    button.setText(holdLabel(up));
                     dialog.dismiss();
                 })
                 .setNegativeButton(android.R.string.cancel, null)

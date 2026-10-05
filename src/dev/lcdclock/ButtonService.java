@@ -5,16 +5,19 @@ import android.content.Intent;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.VibrationEffect;
+import android.os.VibratorManager;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 
 /**
- * Volume-button holds with the phone closed: volume-down opens Alarm & Timer on the cover
- * display, volume-up opens the HOME page of Home Assistant buttons (if any are set up). Accessibility
- * services may start activities from the background, which nothing else on the razr 40's
- * small cover screen can do. Short presses still change the volume. It also runs CoverHome,
- * which opens the cover pages when the outside screen wakes.
+ * Volume-button holds with the phone closed and the outside screen on: each button's shortcut is
+ * chosen in the app (Prefs.holdAction): a page to open (TIMER for volume-down and HOME for
+ * volume-up at first; HOME only once a Home Assistant button is set up), the flashlight, or
+ * nothing. Accessibility services may start activities from the background, which nothing else
+ * on the razr 40's small cover screen can do. Short presses still change the volume. It also runs
+ * CoverHome, which opens the cover pages when the outside screen wakes.
  */
 public class ButtonService extends AccessibilityService {
     private static final long HOLD_MS = 700;
@@ -63,16 +66,23 @@ public class ButtonService extends AccessibilityService {
     }
 
     private boolean hasHoldAction(int key) {
-        return key == KeyEvent.KEYCODE_VOLUME_DOWN || HomeAssistant.hasAnyAction(this);
+        String action = Prefs.holdAction(this, key == KeyEvent.KEYCODE_VOLUME_UP);
+        if (Prefs.HOLD_NONE.equals(action)) {
+            return false; // the button just changes the volume
+        }
+        return !CoverActivity.PAGE_HOME.equals(action) || HomeAssistant.hasAnyAction(this);
     }
 
     private void onHold(int key) {
-        if (key == KeyEvent.KEYCODE_VOLUME_DOWN) {
-            Log.d(Binders.TAG, "volume-down held: opening the cover screen");
-            CoverScreen.open(this);
-        } else if (key == KeyEvent.KEYCODE_VOLUME_UP) {
-            Log.d(Binders.TAG, "volume-up held: opening HOME");
-            CoverScreen.open(this, CoverActivity.PAGE_HOME);
+        boolean up = key == KeyEvent.KEYCODE_VOLUME_UP;
+        String action = Prefs.holdAction(this, up);
+        Log.d(Binders.TAG, "volume-" + (up ? "up" : "down") + " held: " + action);
+        if (Prefs.HOLD_TORCH.equals(action)) {
+            QuickControls.toggleTorch(this);
+            getSystemService(VibratorManager.class).getDefaultVibrator()
+                    .vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK));
+        } else if (!Prefs.HOLD_NONE.equals(action)) {
+            CoverScreen.open(this, action);
         }
     }
 
