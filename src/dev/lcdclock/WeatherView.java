@@ -13,7 +13,8 @@ import java.util.Locale;
 /**
  * The cover screen's WEATHER page: a condition icon and the temperature in segment digits, today's
  * high, low and chance of rain beside them, then the next hours (time, icon, temperature), with
- * the place and when it was fetched. Weather supplies the forecast.
+ * the place and when it was fetched. The icons are in the weather's own colours (yellow sun, grey
+ * cloud, blue rain…), not the clock colour. Weather supplies the forecast.
  */
 final class WeatherView extends CoverPage {
     private static final int HOURS = 6;
@@ -66,7 +67,7 @@ final class WeatherView extends CoverPage {
         // Now: icon, temperature, then today's high, low and rain.
         float h = bottom - top;
         float iconS = h * 0.48f;
-        drawIcon(canvas, path, fill, weather.code, weather.day, left + iconS / 2, top + iconS / 2, iconS, color);
+        drawIcon(canvas, path, fill, weather.code, weather.day, left + iconS / 2, top + iconS / 2, iconS, NATURAL);
         float digitH = h * 0.42f;
         float x = left + iconS + pad;
         x = temperature(canvas, x, top + (iconS - digitH) / 2, digitH, weather.temp, color);
@@ -108,7 +109,7 @@ final class WeatherView extends CoverPage {
             float tw = seg.textWidth(time);
             label(canvas, time, cx - tw / 2, stripTop + textH, textH, i == 0 ? Color.WHITE : GREY);
             float s = slot * 0.55f;
-            drawIcon(canvas, path, fill, hour.code, isDayHour(hr), cx, stripTop + textH * 1.6f + s / 2, s, color);
+            drawIcon(canvas, path, fill, hour.code, isDayHour(hr), cx, stripTop + textH * 1.6f + s / 2, s, NATURAL);
             seg.textStyle(SegmentPainter.seg7(), textH * 1.2f);
             String t = Integer.toString(hour.temp);
             float ttw = seg.textWidth(t);
@@ -165,20 +166,36 @@ final class WeatherView extends CoverPage {
         return end;
     }
 
+    /** drawIcon's colour for the weather's own colours: yellow sun, grey cloud, blue rain… */
+    static final int NATURAL = 0;
+    private static final int SUN = 0xFFFFC81E;
+    private static final int MOON = 0xFFF2E6B8;
+    private static final int CLOUD = 0xFFC4CAD2;
+    private static final int RAIN_CLOUD = 0xFF8C939D;
+    private static final int RAIN = 0xFF4DA6FF;
+    private static final int SNOW = Color.WHITE;
+    private static final int BOLT = 0xFFFFD21F;
+    private static final int FOG = 0xFFA9AFB8;
+
     /**
      * A WMO weather code as a filled icon `s` across, centred on (cx, cy): sun or moon, cloud,
      * sun behind cloud, fog bars, and cloud with drizzle dots, rain streaks, snow flakes or a bolt.
+     * All in `color`, or with NATURAL in the weather's own colours (the WEATHER page's).
      */
     static void drawIcon(Canvas canvas, Path path, Paint fill, int code, boolean day, float cx, float cy, float s,
             int color) {
+        boolean natural = color == NATURAL;
+        int sky = natural ? (day ? SUN : MOON) : color;
         fill.setColor(color);
         path.reset();
         path.setFillType(Path.FillType.WINDING); // reset() keeps the fill type, and the moon's cut-out changes it
         if (code == 0 || code == 1) {
+            fill.setColor(sky);
             sun(canvas, path, fill, cx, cy, s, day);
             return;
         }
         if (code == 2) {
+            fill.setColor(sky);
             sun(canvas, path, fill, cx - s * 0.18f, cy - s * 0.16f, s * 0.7f, day);
             path.reset();
             cloud(path, cx + s * 0.06f, cy + s * 0.1f, s * 0.8f);
@@ -186,11 +203,12 @@ final class WeatherView extends CoverPage {
             cloud(halo, cx + s * 0.06f, cy + s * 0.1f, s * 0.92f);
             fill.setColor(Color.BLACK);
             canvas.drawPath(halo, fill);
-            fill.setColor(color);
+            fill.setColor(natural ? CLOUD : color);
             canvas.drawPath(path, fill);
             return;
         }
         if (code == 45 || code == 48) {
+            fill.setColor(natural ? FOG : color);
             float t = s * 0.1f;
             for (int i = 0; i < 3; i++) {
                 float y = cy - s * 0.22f + i * s * 0.22f;
@@ -200,6 +218,8 @@ final class WeatherView extends CoverPage {
             return;
         }
         boolean precipitation = code >= 51;
+        boolean snow = code >= 71 && code <= 77 || code == 85 || code == 86;
+        fill.setColor(!natural ? color : precipitation && !snow ? RAIN_CLOUD : CLOUD);
         cloud(path, cx, precipitation ? cy - s * 0.12f : cy, s);
         canvas.drawPath(path, fill);
         if (!precipitation) {
@@ -207,6 +227,7 @@ final class WeatherView extends CoverPage {
         }
         float below = cy + s * 0.24f;
         float t = s * 0.07f;
+        fill.setColor(!natural ? color : code >= 95 ? BOLT : snow ? SNOW : RAIN);
         if (code >= 95) { // thunder
             path.reset();
             path.moveTo(cx + s * 0.04f, below - s * 0.04f);
@@ -217,7 +238,7 @@ final class WeatherView extends CoverPage {
             path.lineTo(cx + s * 0.02f, below + s * 0.08f);
             path.close();
             canvas.drawPath(path, fill);
-        } else if (code >= 71 && code <= 77 || code == 85 || code == 86) { // snow
+        } else if (snow) {
             for (int i = -1; i <= 1; i++) {
                 float fx = cx + i * s * 0.22f;
                 float fy = below + s * 0.1f + (i == 0 ? s * 0.08f : 0);
