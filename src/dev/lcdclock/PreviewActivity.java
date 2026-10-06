@@ -167,6 +167,20 @@ public class PreviewActivity extends Activity {
             holds.addView(choice);
         }
 
+        // Picture-in-picture through closing the phone (PipGuard).
+        column.addView(header(R.string.pip_title));
+        LinearLayout pip = card(column);
+        Switch keepPip = new Switch(this);
+        keepPip.setText(R.string.pip_keep);
+        keepPip.setTextColor(Color.WHITE);
+        keepPip.setTextSize(16);
+        keepPip.setChecked(Prefs.keepPip(this));
+        keepPip.setOnCheckedChangeListener((button, on) -> Prefs.get(this).edit().putBoolean(Prefs.KEEP_PIP, on).apply());
+        pip.addView(keepPip);
+        TextView pipHelp = text(getString(R.string.pip_help), 14);
+        pipHelp.setPadding(0, Math.round(8 * dp), 0, 0);
+        pip.addView(pipHelp);
+
         // HOME's three buttons.
         column.addView(header(R.string.ha_title));
         LinearLayout ha = card(column);

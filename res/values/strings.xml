@@ -3,7 +3,7 @@
     <string name="app_name">LCD Clock</string>
     <string name="face_digits">LCD Digits</string>
     <string name="button_service_label">LCD Clock cover button</string>
-    <string name="button_service_description">With the phone closed, hold a volume button to open the outside-screen page (or switch the flashlight) you chose for it in LCD Clock; at first volume-down opens the timer and volume-up your Home Assistant buttons. Short presses still change the volume, and nothing happens while the phone is open.</string>
+    <string name="button_service_description">With the phone closed, hold a volume button to open the outside-screen page (or switch the flashlight) you chose for it in LCD Clock; at first volume-down opens the timer and volume-up your Home Assistant buttons. Short presses still change the volume, and nothing happens while the phone is open. While you close the phone it also turns a picture-in-picture window back into its full app, so the video keeps playing, and the first time a playing video goes into picture-in-picture after a fold it turns the screen once so the window doesn\'t land off-screen; for that it watches which app is in front (if that\'s switched on in LCD Clock).</string>
     <string name="timer_done">Timer done</string>
     <string name="timer_done_channel">Timer done</string>
     <string name="stop">Stop</string>
@@ -105,6 +105,9 @@
     <string name="page_face_help">LCD Clock\'s own copy of the face, put up when the outside screen wakes: swipe left or right for the pages, up or down for Motorola\'s face, panels and notifications. The padlock above the alarm bell is lit while the phone is locked; touch the fingerprint sensor to unlock, as on Motorola\'s face.</string>
     <string name="page_show">Show %1$s</string>
     <string name="timeout_dialog_title">%1$s: screen off after</string>
+    <string name="pip_title">Picture-in-picture</string>
+    <string name="pip_keep">Keep playing when you close the phone</string>
+    <string name="pip_help">The razr closes picture-in-picture windows the moment it folds, and apps stop their video when that happens. With this on, LCD Clock turns the window back into the full app while the phone is closing, so apps that can play in the background (YouTube, Chzzk) keep the sound going. Open the phone and the app is there full screen, still playing. The razr also loses track of where picture-in-picture belongs whenever it folds, which sends the next window off the right edge of the screen; to put that right the screen turns once (a moment of black) the first time a playing video leaves the screen after the phone has been folded. Needs the cover button (accessibility) turned on.</string>
     <string name="ha_title">Home Assistant</string>
     <string-array name="tab_help">
         <item>LCD Clock\'s own countdown timer: it keeps running with the screen off and rings on the outside screen.</item>

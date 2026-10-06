@@ -21,6 +21,8 @@ final class Prefs {
             0xFF34E07A, 0xFFFFFFFF};
     static final String BLACKOUT = "blackout_ms";
     static final String FACE_HOME = "face_home";
+    /** Expand a PiP window while the phone closes so its video keeps playing (PipGuard). */
+    static final String KEEP_PIP = "keep_pip";
     static final String LAST_RECORDING = "last_recording";
     static final String LAST_RECORDING_MS = "last_recording_ms";
     static final String TAB_ORDER = "tab_order";
@@ -72,6 +74,11 @@ final class Prefs {
     /** Open LCD Clock's own copy of the face when the outside screen wakes, so swipes reach the pages. */
     static boolean faceHome(Context context) {
         return get(context).getBoolean(FACE_HOME, true);
+    }
+
+    /** Keep picture-in-picture video playing when the phone closes; see PipGuard. */
+    static boolean keepPip(Context context) {
+        return get(context).getBoolean(KEEP_PIP, true);
     }
 
     /** The tabs in the order chosen in the app; tabs added since go at the end. */

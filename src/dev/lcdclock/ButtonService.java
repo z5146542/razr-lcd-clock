@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.VibratorManager;
 import android.util.Log;
+import android.view.Display;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 
@@ -17,8 +18,9 @@ import android.view.accessibility.AccessibilityEvent;
  * volume-up at first; HOME only once a Home Assistant button is set up), the flashlight, or
  * nothing. Accessibility services may start activities from the background, which nothing else
  * on the razr 40's small cover screen can do. Short presses still change the volume. It also runs
- * CoverHome, which opens the cover pages when the outside screen wakes, and ClockWidget's
- * minute-by-minute redraw of the home screen widget while the inside screen is on.
+ * CoverHome, which opens the cover pages when the outside screen wakes, ClockWidget's
+ * minute-by-minute redraw of the home screen widget while the inside screen is on, and PipGuard,
+ * which keeps picture-in-picture video playing when the phone closes.
  */
 public class ButtonService extends AccessibilityService {
     private static final long HOLD_MS = 700;
@@ -91,6 +93,7 @@ public class ButtonService extends AccessibilityService {
     protected void onServiceConnected() {
         CoverHome.start(this);
         ClockWidget.start(this);
+        PipGuard.start(this);
         Prefs.dropFossify(this);
     }
 
@@ -98,11 +101,15 @@ public class ButtonService extends AccessibilityService {
     public boolean onUnbind(Intent intent) {
         CoverHome.stop();
         ClockWidget.stop();
+        PipGuard.stop();
         return super.onUnbind(intent);
     }
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        if (event.getDisplayId() == Display.DEFAULT_DISPLAY) {
+            PipGuard.onWindowsChanged();
+        }
     }
 
     @Override

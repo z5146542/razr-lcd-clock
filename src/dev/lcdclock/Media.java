@@ -265,6 +265,17 @@ final class Media {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    /** The apps with a session playing (or about to); none without notification access. */
+    static List<String> playingApps(Context context) {
+        List<String> apps = new ArrayList<>();
+        for (MediaController c : watching ? sessions : query(context)) {
+            if (isActive(c.getPlaybackState()) && !apps.contains(c.getPackageName())) {
+                apps.add(c.getPackageName());
+            }
+        }
+        return apps;
+    }
+
     private static List<MediaController> query(Context context) {
         if (!allowed(context)) {
             return Collections.emptyList();

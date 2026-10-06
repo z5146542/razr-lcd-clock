@@ -109,6 +109,17 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen" />
 
+        <!-- A moment of black landscape, so the inner screen turns and PiP comes back on-screen (PipGuard). -->
+        <activity
+            android:name=".PipResetActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:taskAffinity="dev.lcdclock.pipreset"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@style/PipReset" />
+
         <!-- The home screen clock widgets: the face, and the time alone. -->
         <receiver
             android:name=".ClockWidget"
