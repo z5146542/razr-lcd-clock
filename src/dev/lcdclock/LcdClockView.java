@@ -20,7 +20,8 @@ import java.util.Locale;
 /**
  * The clock face: an italic LCD-style "HH:MM" with the unlit segments showing, and a
  * weekday, day.month and battery line underneath (a white battery filled in a colour from red to
- * green by charge, yellow while battery saver is on; a bolt while plugged in, else a plus with
+ * green by charge, the app's battery-saver colour (yellow at first) while battery saver is on;
+ * a bolt while plugged in, else a plus with
  * battery saver). After the minutes, a column of AM/PM, a
  * padlock (lit while the phone is locked, unlit once it's unlocked) and the alarm bell.
  */
@@ -213,7 +214,7 @@ final class LcdClockView extends View {
         float iconX = digitsX - glyphH * 0.5f - iconW;
         boolean saver = !preview && QuickControls.saverOn(getContext());
         drawBattery(canvas, fill, outline, path, iconX, baseline - glyphH, iconW, glyphH, level, charging, saver,
-                batteryColor);
+                Prefs.saverColor(getContext()), batteryColor);
     }
 
     /** The battery icon's colour: red when empty through yellow to green when full. */
@@ -230,19 +231,16 @@ final class LcdClockView extends View {
         return battery != null && battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0;
     }
 
-    /** The battery's fill while battery saver is on, as Android shows it. */
-    static final int SAVER_YELLOW = 0xFFFFD21F;
-
     /**
-     * Battery outline (white) with a terminal nub, filled to the level in `color`, or yellow
+     * Battery outline (white) with a terminal nub, filled to the level in `color`, or `saverColor`
      * while battery saver is switched on. On it, a bolt while plugged in, else a plus while battery
-     * saver is on (so a phone charging with saver on shows both: yellow and the bolt). The
+     * saver is on (so a phone charging with saver on shows both: that colour and the bolt). The
      * bolt or plus is cut out of the filled part and drawn in the empty part, so both stay
      * readable. Also the quick controls panel's battery.
      */
     static void drawBattery(Canvas canvas, Paint fill, Paint outline, Path path, float x, float y, float w, float h,
-            int level, boolean charging, boolean saver, int color) {
-        int ink = saver ? SAVER_YELLOW : color;
+            int level, boolean charging, boolean saver, int saverColor, int color) {
+        int ink = saver ? saverColor : color;
         float sw = Math.max(1.5f, h * 0.12f);
         float nubW = h * 0.16f;
         float bodyW = w - nubW;

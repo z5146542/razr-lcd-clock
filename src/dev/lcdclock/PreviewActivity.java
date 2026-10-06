@@ -22,6 +22,10 @@ import android.view.Gravity;
 import android.view.View;
 import android.app.AlertDialog;
 import android.text.InputType;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.TextUtils;
+import android.text.style.ForegroundColorSpan;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -102,6 +106,10 @@ public class PreviewActivity extends Activity {
         colourNote.setPadding(0, Math.round(10 * dp), 0, 0);
         faceCard.addView(colourNote);
         faceCard.addView(flatButton(getString(R.string.open_clock_styles), v -> openClockStyles()));
+        Button saverColour = flatButton("", null);
+        saverColour.setText(saverColourLabel());
+        saverColour.setOnClickListener(v -> chooseSaverColour(saverColour));
+        faceCard.addView(saverColour);
 
         // What the outside screen needs, each with a way to fix it (filled in onResume).
         column.addView(header(R.string.setup_title));
@@ -423,6 +431,45 @@ public class PreviewActivity extends Activity {
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
                     Prefs.setBlackout(this, page, TIMEOUTS[which]);
                     button.setText(getString(R.string.cover_timeout_button, timeoutLabel(TIMEOUTS[which])));
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** "Battery saver colour: ● Yellow", the dot in that colour. */
+    private CharSequence saverColourLabel() {
+        String[] names = getResources().getStringArray(R.array.saver_colour_names);
+        int at = 0;
+        for (int i = 0; i < Prefs.SAVER_COLORS.length; i++) {
+            if (Prefs.SAVER_COLORS[i] == Prefs.saverColor(this)) {
+                at = i;
+            }
+        }
+        return TextUtils.concat(getString(R.string.saver_colour_button), "  ", colourDot(Prefs.SAVER_COLORS[at], names[at]));
+    }
+
+    private static CharSequence colourDot(int color, String name) {
+        SpannableString s = new SpannableString("●  " + name);
+        s.setSpan(new ForegroundColorSpan(color), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return s;
+    }
+
+    private void chooseSaverColour(Button button) {
+        String[] names = getResources().getStringArray(R.array.saver_colour_names);
+        CharSequence[] items = new CharSequence[names.length];
+        int checked = 0;
+        for (int i = 0; i < names.length; i++) {
+            items[i] = colourDot(Prefs.SAVER_COLORS[i], names[i]);
+            if (Prefs.SAVER_COLORS[i] == Prefs.saverColor(this)) {
+                checked = i;
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.saver_colour_title)
+                .setSingleChoiceItems(items, checked, (dialog, which) -> {
+                    Prefs.setSaverColor(this, Prefs.SAVER_COLORS[which]);
+                    button.setText(saverColourLabel());
                     dialog.dismiss();
                 })
                 .setNegativeButton(android.R.string.cancel, null)

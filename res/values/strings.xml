@@ -53,6 +53,18 @@
     </string-array>
     <string name="quick_needs_permission">%1$s (needs a permission, below)</string>
     <string name="quick_secure_help">Battery saver and Night Light need a permission Android only gives from a computer, once: with the phone connected over USB debugging, run\nadb shell pm grant dev.lcdclock android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="saver_colour_button">Battery saver colour:</string>
+    <string name="saver_colour_title">Battery colour in battery saver</string>
+    <string-array name="saver_colour_names">
+        <item>Yellow</item>
+        <item>Amber</item>
+        <item>Orange</item>
+        <item>Red</item>
+        <item>Magenta</item>
+        <item>Light blue</item>
+        <item>Green</item>
+        <item>White</item>
+    </string-array>
     <string name="quick_home">Home Assistant: %1$s</string>
     <string name="quick_not_set_up">%1$s (not set up)</string>
     <string name="wg_title">WireGuard</string>

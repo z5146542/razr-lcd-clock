@@ -14,6 +14,11 @@ import java.util.Set;
 /** Small persistent state, in device-protected storage so it works before first unlock. */
 final class Prefs {
     static final String COLOR = "color";
+    /** The battery's fill while battery saver is on (face and quick controls), chosen in the app. */
+    private static final String SAVER_COLOR = "saver_color";
+    /** The choices for it, in the app's order (R.array.saver_colour_names); yellow first. */
+    static final int[] SAVER_COLORS = {0xFFFFD21F, 0xFFFFB000, 0xFFFF7A1A, 0xFFFF3B30, 0xFFFF00FF, 0xFF6EC6FF,
+            0xFF34E07A, 0xFFFFFFFF};
     static final String BLACKOUT = "blackout_ms";
     static final String FACE_HOME = "face_home";
     static final String LAST_RECORDING = "last_recording";
@@ -146,6 +151,14 @@ final class Prefs {
     }
 
     /** The colour picked for the clock face, so the cover screen can match it. */
+    static int saverColor(Context context) {
+        return get(context).getInt(SAVER_COLOR, SAVER_COLORS[0]);
+    }
+
+    static void setSaverColor(Context context, int color) {
+        get(context).edit().putInt(SAVER_COLOR, color).apply();
+    }
+
     static int color(Context context) {
         return get(context).getInt(COLOR, Palette.PRESETS[0]);
     }
