@@ -15,7 +15,7 @@ import android.view.Display;
 import android.widget.RemoteViews;
 
 /**
- * The 4x2 home screen widget: the clock face as on the outside screen (time, AM/PM, alarm bell,
+ * The 3x2 home screen widget: the clock face as on the outside screen (time, AM/PM, alarm bell,
  * date and battery), without the padlock, as a picture LcdClockView draws. A widget can't run the
  * face itself, so the picture is redrawn each minute, but only while the inside screen is on (the
  * minute tick and screen-on reach the receiver ButtonService registers): nothing runs for it while

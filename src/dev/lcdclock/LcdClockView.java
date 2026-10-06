@@ -127,15 +127,18 @@ final class LcdClockView extends View {
 
     /**
      * The home screen widget's picture (ClockWidget): the face as it is now, without the padlock,
-     * on a rounded black card `widthPx` by `heightPx`.
+     * on a rounded black card of the outside screen's shape, as big as fits `widthPx` by
+     * `heightPx` (the picture is that card alone; the widget centres it).
      */
     static Bitmap widget(Context context, int widthPx, int heightPx) {
-        Bitmap bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888);
+        int w = Math.min(widthPx, Math.round(heightPx * 368f / 194f));
+        int h = Math.min(heightPx, Math.round(widthPx * 194f / 368f));
+        Bitmap bitmap = Bitmap.createBitmap(Math.max(1, w), Math.max(1, h), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         Paint black = new Paint(Paint.ANTI_ALIAS_FLAG);
         black.setColor(Color.BLACK);
-        float radius = Math.min(widthPx, heightPx) * 0.12f;
-        canvas.drawRoundRect(0, 0, widthPx, heightPx, radius, radius, black);
+        float radius = h * 0.12f;
+        canvas.drawRoundRect(0, 0, w, h, radius, radius, black);
         LcdClockView face = new LcdClockView(context, false);
         face.showLock = false;
         face.setColor(Prefs.color(context));
@@ -143,8 +146,7 @@ final class LcdClockView extends View {
         int hour = now.get(Calendar.HOUR_OF_DAY);
         boolean twelveHour = !DateFormat.is24HourFormat(context);
         int displayHour = twelveHour ? (hour % 12 == 0 ? 12 : hour % 12) : hour;
-        face.drawFace(canvas, widthPx, heightPx, displayHour, twelveHour, hour >= 12, now.get(Calendar.MINUTE), true,
-                now);
+        face.drawFace(canvas, w, h, displayHour, twelveHour, hour >= 12, now.get(Calendar.MINUTE), true, now);
         return bitmap;
     }
 
