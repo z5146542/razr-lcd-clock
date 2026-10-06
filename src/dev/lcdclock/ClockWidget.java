@@ -82,6 +82,9 @@ public class ClockWidget extends AppWidgetProvider {
             widthDp = 300;
             heightDp = 150;
         }
+        Log.d(Binders.TAG, "widget " + id + ": " + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0) + "-"
+                + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 0) + " x "
+                + options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0) + "-" + heightDp + " dp");
         float scale = Math.min(1f, MAX_WIDTH_PX / (widthDp * density));
         int w = Math.max(1, Math.round(widthDp * density * scale));
         int h = Math.max(1, Math.round(heightDp * density * scale));
