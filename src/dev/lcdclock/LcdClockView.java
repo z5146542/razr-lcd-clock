@@ -2,13 +2,14 @@ package dev.lcdclock;
 
 import android.app.AlarmManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.BatteryManager;
-import android.os.PowerManager;
 import android.text.format.DateFormat;
 import android.view.View;
 
@@ -19,7 +20,8 @@ import java.util.Locale;
 /**
  * The clock face: an italic LCD-style "HH:MM" with the unlit segments showing, and a
  * weekday, day.month and battery line underneath (a white battery filled in a colour from red to
- * green by charge, light blue with a plus while battery saver is on). After the minutes, a column of AM/PM, a
+ * green by charge, light blue while battery saver is on; a bolt while plugged in, else a plus with
+ * battery saver). After the minutes, a column of AM/PM, a
  * padlock (lit while the phone is locked, unlit once it's unlocked) and the alarm bell.
  */
 final class LcdClockView extends View {
@@ -196,7 +198,7 @@ final class LcdClockView extends View {
 
         BatteryManager battery = getContext().getSystemService(BatteryManager.class);
         int level = Math.max(0, Math.min(100, battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)));
-        boolean charging = battery.isCharging();
+        boolean charging = pluggedIn(getContext());
         int batteryColor = batteryColor(level);
 
         seg.textStyle(SegmentPainter.seg14(), glyphH);
@@ -209,7 +211,7 @@ final class LcdClockView extends View {
 
         float iconW = glyphH * 1.9f;
         float iconX = digitsX - glyphH * 0.5f - iconW;
-        boolean saver = !preview && getContext().getSystemService(PowerManager.class).isPowerSaveMode();
+        boolean saver = !preview && QuickControls.saverOn(getContext());
         drawBattery(canvas, fill, outline, path, iconX, baseline - glyphH, iconW, glyphH, level, charging, saver,
                 batteryColor);
     }
@@ -219,14 +221,24 @@ final class LcdClockView extends View {
         return Color.HSVToColor(new float[] {1.2f * level, 1f, 1f});
     }
 
+    /**
+     * Plugged in, as the status bar shows a bolt for: not BatteryManager.isCharging, which is false
+     * while plugged in when Motorola's battery care holds charging back.
+     */
+    static boolean pluggedIn(Context context) {
+        Intent battery = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        return battery != null && battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0;
+    }
+
     /** The battery's fill while battery saver is on, as Android shows it. */
     static final int SAVER_BLUE = 0xFF6EC6FF;
 
     /**
-     * Battery outline (white) with a terminal nub, filled to the level in `color`. While battery
-     * saver is on the fill is light blue with a plus on it; while charging, a bolt. The plus or
-     * bolt is cut out of the filled part and drawn in the empty part, so both stay readable. Also
-     * the quick controls panel's battery.
+     * Battery outline (white) with a terminal nub, filled to the level in `color`, or light blue
+     * while battery saver is switched on. On it, a bolt while plugged in, else a plus while battery
+     * saver is on (so a phone charging with saver on shows both: light blue and the bolt). The
+     * bolt or plus is cut out of the filled part and drawn in the empty part, so both stay
+     * readable. Also the quick controls panel's battery.
      */
     static void drawBattery(Canvas canvas, Paint fill, Paint outline, Path path, float x, float y, float w, float h,
             int level, boolean charging, boolean saver, int color) {
@@ -249,14 +261,7 @@ final class LcdClockView extends View {
         fill.setColor(ink);
         canvas.drawRect(ix, iy, fillRight, iy + ih, fill);
         path.reset();
-        if (saver) {
-            float cx = ix + iw / 2;
-            float cy = iy + ih / 2;
-            float arm = ih * 0.42f;
-            float t = ih * 0.3f;
-            path.addRect(cx - arm, cy - t / 2, cx + arm, cy + t / 2, Path.Direction.CW);
-            path.addRect(cx - t / 2, cy - arm, cx + t / 2, cy + arm, Path.Direction.CW);
-        } else if (charging) {
+        if (charging) {
             path.moveTo(ix + iw * 0.58f, iy);
             path.lineTo(ix + iw * 0.22f, iy + ih * 0.58f);
             path.lineTo(ix + iw * 0.47f, iy + ih * 0.58f);
@@ -264,6 +269,13 @@ final class LcdClockView extends View {
             path.lineTo(ix + iw * 0.78f, iy + ih * 0.40f);
             path.lineTo(ix + iw * 0.53f, iy + ih * 0.40f);
             path.close();
+        } else if (saver) {
+            float cx = ix + iw / 2;
+            float cy = iy + ih / 2;
+            float arm = ih * 0.42f;
+            float t = ih * 0.3f;
+            path.addRect(cx - arm, cy - t / 2, cx + arm, cy + t / 2, Path.Direction.CW);
+            path.addRect(cx - t / 2, cy - arm, cx + t / 2, cy + arm, Path.Direction.CW);
         } else {
             return;
         }
