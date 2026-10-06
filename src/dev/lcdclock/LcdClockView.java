@@ -20,7 +20,7 @@ import java.util.Locale;
 /**
  * The clock face: an italic LCD-style "HH:MM" with the unlit segments showing, and a
  * weekday, day.month and battery line underneath (a white battery filled in a colour from red to
- * green by charge, light blue while battery saver is on; a bolt while plugged in, else a plus with
+ * green by charge, yellow while battery saver is on; a bolt while plugged in, else a plus with
  * battery saver). After the minutes, a column of AM/PM, a
  * padlock (lit while the phone is locked, unlit once it's unlocked) and the alarm bell.
  */
@@ -231,18 +231,18 @@ final class LcdClockView extends View {
     }
 
     /** The battery's fill while battery saver is on, as Android shows it. */
-    static final int SAVER_BLUE = 0xFF6EC6FF;
+    static final int SAVER_YELLOW = 0xFFFFD21F;
 
     /**
-     * Battery outline (white) with a terminal nub, filled to the level in `color`, or light blue
+     * Battery outline (white) with a terminal nub, filled to the level in `color`, or yellow
      * while battery saver is switched on. On it, a bolt while plugged in, else a plus while battery
-     * saver is on (so a phone charging with saver on shows both: light blue and the bolt). The
+     * saver is on (so a phone charging with saver on shows both: yellow and the bolt). The
      * bolt or plus is cut out of the filled part and drawn in the empty part, so both stay
      * readable. Also the quick controls panel's battery.
      */
     static void drawBattery(Canvas canvas, Paint fill, Paint outline, Path path, float x, float y, float w, float h,
             int level, boolean charging, boolean saver, int color) {
-        int ink = saver ? SAVER_BLUE : color;
+        int ink = saver ? SAVER_YELLOW : color;
         float sw = Math.max(1.5f, h * 0.12f);
         float nubW = h * 0.16f;
         float bodyW = w - nubW;
