@@ -118,7 +118,7 @@ final class QuickView extends CoverPage {
         float iconW = textH * 1.9f;
         float iconX = digitsX - textH * 0.5f - iconW;
         LcdClockView.drawBattery(canvas, fill, outline, path, iconX, base - textH, iconW, textH, level,
-                battery.isCharging(), LcdClockView.batteryColor(level));
+                battery.isCharging(), QuickControls.saverActive(getContext()), LcdClockView.batteryColor(level));
         canvas.restore();
     }
 

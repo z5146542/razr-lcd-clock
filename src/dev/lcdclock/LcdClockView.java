@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.BatteryManager;
+import android.os.PowerManager;
 import android.text.format.DateFormat;
 import android.view.View;
 
@@ -17,7 +18,8 @@ import java.util.Locale;
 
 /**
  * The clock face: an italic LCD-style "HH:MM" with the unlit segments showing, and a
- * weekday, day.month and battery line underneath. After the minutes, a column of AM/PM, a
+ * weekday, day.month and battery line underneath (a white battery filled in a colour from red to
+ * green by charge, light blue with a plus while battery saver is on). After the minutes, a column of AM/PM, a
  * padlock (lit while the phone is locked, unlit once it's unlocked) and the alarm bell.
  */
 final class LcdClockView extends View {
@@ -207,7 +209,9 @@ final class LcdClockView extends View {
 
         float iconW = glyphH * 1.9f;
         float iconX = digitsX - glyphH * 0.5f - iconW;
-        drawBattery(canvas, fill, outline, path, iconX, baseline - glyphH, iconW, glyphH, level, charging, batteryColor);
+        boolean saver = !preview && getContext().getSystemService(PowerManager.class).isPowerSaveMode();
+        drawBattery(canvas, fill, outline, path, iconX, baseline - glyphH, iconW, glyphH, level, charging, saver,
+                batteryColor);
     }
 
     /** The battery icon's colour: red when empty through yellow to green when full. */
@@ -215,20 +219,25 @@ final class LcdClockView extends View {
         return Color.HSVToColor(new float[] {1.2f * level, 1f, 1f});
     }
 
+    /** The battery's fill while battery saver is on, as Android shows it. */
+    static final int SAVER_BLUE = 0xFF6EC6FF;
+
     /**
-     * Battery outline with a terminal nub, filled to the level. While charging, a bolt sits on
-     * top: cut out of the filled part and drawn in the empty part, so both stay readable. Also
+     * Battery outline (white) with a terminal nub, filled to the level in `color`. While battery
+     * saver is on the fill is light blue with a plus on it; while charging, a bolt. The plus or
+     * bolt is cut out of the filled part and drawn in the empty part, so both stay readable. Also
      * the quick controls panel's battery.
      */
     static void drawBattery(Canvas canvas, Paint fill, Paint outline, Path path, float x, float y, float w, float h,
-            int level, boolean charging, int color) {
-        fill.setColor(color);
-        outline.setColor(color);
+            int level, boolean charging, boolean saver, int color) {
+        int ink = saver ? SAVER_BLUE : color;
         float sw = Math.max(1.5f, h * 0.12f);
         float nubW = h * 0.16f;
         float bodyW = w - nubW;
+        outline.setColor(Color.WHITE);
         outline.setStrokeWidth(sw);
         canvas.drawRoundRect(x + sw / 2, y + sw / 2, x + bodyW - sw / 2, y + h - sw / 2, sw, sw, outline);
+        fill.setColor(Color.WHITE);
         canvas.drawRect(x + bodyW, y + h * 0.3f, x + w, y + h * 0.7f, fill);
 
         float inset = sw * 1.75f;
@@ -237,9 +246,17 @@ final class LcdClockView extends View {
         float iw = bodyW - 2 * inset;
         float ih = h - 2 * inset;
         float fillRight = ix + iw * level / 100f;
+        fill.setColor(ink);
         canvas.drawRect(ix, iy, fillRight, iy + ih, fill);
-        if (charging) {
-            path.reset();
+        path.reset();
+        if (saver) {
+            float cx = ix + iw / 2;
+            float cy = iy + ih / 2;
+            float arm = ih * 0.42f;
+            float t = ih * 0.3f;
+            path.addRect(cx - arm, cy - t / 2, cx + arm, cy + t / 2, Path.Direction.CW);
+            path.addRect(cx - t / 2, cy - arm, cx + t / 2, cy + arm, Path.Direction.CW);
+        } else if (charging) {
             path.moveTo(ix + iw * 0.58f, iy);
             path.lineTo(ix + iw * 0.22f, iy + ih * 0.58f);
             path.lineTo(ix + iw * 0.47f, iy + ih * 0.58f);
@@ -247,16 +264,18 @@ final class LcdClockView extends View {
             path.lineTo(ix + iw * 0.78f, iy + ih * 0.40f);
             path.lineTo(ix + iw * 0.53f, iy + ih * 0.40f);
             path.close();
-            canvas.save();
-            canvas.clipRect(ix, iy, fillRight, iy + ih);
-            fill.setColor(Color.BLACK);
-            canvas.drawPath(path, fill);
-            canvas.restore();
-            canvas.save();
-            canvas.clipRect(fillRight, iy, ix + iw, iy + ih);
-            fill.setColor(color);
-            canvas.drawPath(path, fill);
-            canvas.restore();
+        } else {
+            return;
         }
+        canvas.save();
+        canvas.clipRect(ix, iy, fillRight, iy + ih);
+        fill.setColor(Color.BLACK);
+        canvas.drawPath(path, fill);
+        canvas.restore();
+        canvas.save();
+        canvas.clipRect(fillRight, iy, ix + iw, iy + ih);
+        fill.setColor(ink);
+        canvas.drawPath(path, fill);
+        canvas.restore();
     }
 }

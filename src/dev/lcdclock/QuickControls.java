@@ -181,6 +181,11 @@ final class QuickControls {
         }
     }
 
+    /** Battery saver is actually saving now (not held back by charging). */
+    static boolean saverActive(Context context) {
+        return context.getSystemService(PowerManager.class).isPowerSaveMode();
+    }
+
     static void toggleSaver(Context context) {
         putSetting(context, true, "low_power", !saverOn(context));
     }
