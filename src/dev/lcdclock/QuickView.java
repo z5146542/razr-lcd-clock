@@ -160,7 +160,7 @@ final class QuickView extends CoverPage {
                 name = "NIGHT";
                 break;
             case QuickControls.BEDTIME:
-                on = QuickControls.bedtimeOn();
+                on = QuickControls.bedtimeOn(context);
                 name = "BEDTIME";
                 break;
             case QuickControls.WIREGUARD:
@@ -373,10 +373,7 @@ final class QuickView extends CoverPage {
                 QuickControls.toggleNight(context);
                 break;
             case QuickControls.BEDTIME:
-                if (!QuickControls.endBedtime()) {
-                    Lock.refuse(context); // not on, and only Wellbeing can start it
-                    return false;
-                }
+                QuickControls.toggleBedtime(context);
                 break;
             case QuickControls.WIREGUARD:
                 QuickControls.toggleWireGuard(context);

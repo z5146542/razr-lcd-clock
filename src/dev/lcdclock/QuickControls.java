@@ -1,9 +1,7 @@
 package dev.lcdclock;
 
 import android.Manifest;
-import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -15,22 +13,22 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
-import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * What the quick controls panel can switch, and how: the flashlight, an SOS signal with it
  * (SosService), battery saver and Night Light (system settings, once Android's "write secure
  * settings" permission has been given from a computer: canWriteSecure), Digital Wellbeing's Bedtime
- * mode (shown, and ended through its own notification's Turn off; nothing outside Wellbeing can
- * start it), Do Not Disturb (allowed to
+ * mode (through Wellbeing's provider), Do Not Disturb (allowed to
  * apps with notification access), the ring mode, media volume, the Home Assistant buttons, a
  * WireGuard tunnel through the WG Tunnel app's remote control, and leaving for Motorola's own
  * screen. Wi-Fi, mobile data and Bluetooth aren't here: Android doesn't let apps switch them.
@@ -53,8 +51,6 @@ final class QuickControls {
             HOME_PREFIX + 2, WIREGUARD, MOTOROLA);
 
     private static final String WELLBEING = "com.google.android.apps.wellbeing";
-    /** The channel of Wellbeing's "Bedtime mode is on" notification. */
-    private static final String BEDTIME_CHANNEL = "wind_down_notifications";
     private static final String WG_PACKAGE = "com.zaneschepke.wireguardautotunnel";
     private static final ComponentName WG_REMOTE = new ComponentName(WG_PACKAGE,
             WG_PACKAGE + ".core.broadcast.RemoteControlReceiver");
@@ -86,12 +82,7 @@ final class QuickControls {
             return canWriteSecure(context);
         }
         if (BEDTIME.equals(control)) {
-            try {
-                context.getPackageManager().getPackageInfo(WELLBEING, 0);
-                return true;
-            } catch (PackageManager.NameNotFoundException e) {
-                return false;
-            }
+            return context.getPackageManager().resolveContentProvider(WELLBEING_API.getAuthority(), 0) != null;
         }
         if (WIREGUARD.equals(control)) {
             return !Prefs.get(context).getString(Prefs.WG_TUNNEL, "").isEmpty()
@@ -218,51 +209,46 @@ final class QuickControls {
     // ---- Digital Wellbeing's Bedtime mode ----
 
     /**
-     * The Turn off button ("Turn off", or "Turn off for now" when a schedule started it) of
-     * Wellbeing's "Bedtime mode is on" notification; null while Bedtime mode isn't on. Wellbeing
-     * keeps its own switches private, so this button is the only way in from another app.
+     * Wellbeing's provider: get_wind_down_status (state 1 = on, 0 = off, 2 = paused) and
+     * update_wind_down (state 0 off, 1 on) are open to other apps, unlike its other Bedtime calls.
      */
-    private static Notification.Action bedtimeOff() {
-        MediaListener listener = MediaListener.connected;
-        if (listener == null) {
-            return null;
+    private static final Uri WELLBEING_API = Uri.parse("content://com.google.android.apps.wellbeing.api");
+    private static final long BEDTIME_FRESH_MS = 2000;
+    private static boolean bedtimeOn;
+    private static long bedtimeCheckedAt;
+
+    /** Bedtime mode is on (checked with Wellbeing at most every two seconds). */
+    static boolean bedtimeOn(Context context) {
+        long now = SystemClock.elapsedRealtime();
+        if (now - bedtimeCheckedAt > BEDTIME_FRESH_MS || bedtimeCheckedAt == 0) {
+            bedtimeCheckedAt = now;
+            Bundle status = wellbeing(context, "get_wind_down_status", null);
+            bedtimeOn = status != null && status.getInt("state", 0) == 1;
         }
+        return bedtimeOn;
+    }
+
+    /** Turns Bedtime mode off if it's on, else on (also from paused). */
+    static void toggleBedtime(Context context) {
+        boolean on = !bedtimeOn(context);
+        Bundle args = new Bundle();
+        args.putInt("state", on ? 1 : 0);
+        Bundle result = wellbeing(context, "update_wind_down", args);
+        if (result != null && result.getInt("result", -1) == 1) {
+            bedtimeOn = on;
+            bedtimeCheckedAt = SystemClock.elapsedRealtime();
+            Log.d(Binders.TAG, "bedtime: " + (on ? "on" : "off"));
+        } else {
+            Log.w(Binders.TAG, "bedtime: Wellbeing refused " + result);
+        }
+    }
+
+    private static Bundle wellbeing(Context context, String method, Bundle args) {
         try {
-            for (StatusBarNotification sbn : listener.getActiveNotifications()) {
-                Notification n = sbn.getNotification();
-                if (!WELLBEING.equals(sbn.getPackageName()) || !BEDTIME_CHANNEL.equals(n.getChannelId())
-                        || n.actions == null) {
-                    continue;
-                }
-                for (Notification.Action action : n.actions) {
-                    if (action.title != null && action.actionIntent != null
-                            && action.title.toString().toLowerCase(Locale.ROOT).startsWith("turn off")) {
-                        return action;
-                    }
-                }
-            }
+            return context.getContentResolver().call(WELLBEING_API, method, null, args);
         } catch (RuntimeException e) {
-            Log.w(Binders.TAG, "can't read Wellbeing's notification", e);
-        }
-        return null;
-    }
-
-    static boolean bedtimeOn() {
-        return bedtimeOff() != null;
-    }
-
-    /** Ends Bedtime mode with its notification's Turn off; false if it isn't on. */
-    static boolean endBedtime() {
-        Notification.Action off = bedtimeOff();
-        if (off == null) {
-            return false;
-        }
-        try {
-            off.actionIntent.send();
-            Log.d(Binders.TAG, "bedtime: pressed \"" + off.title + "\"");
-            return true;
-        } catch (PendingIntent.CanceledException e) {
-            return false;
+            Log.w(Binders.TAG, "bedtime: can't reach Wellbeing", e);
+            return null;
         }
     }
 
