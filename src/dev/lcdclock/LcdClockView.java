@@ -42,8 +42,12 @@ final class LcdClockView extends View {
     private final Path path = new Path();
     private int color = Palette.PRESETS[0];
     private boolean visibleToUser = true;
-    /** The padlock in the column after the minutes; not on the home screen widget. */
+    /** The padlock in the column after the minutes; not on the home screen widgets. */
     private boolean showLock = true;
+    /** Just the time row (the compact widget): no weekday, date and battery line under it. */
+    private boolean timeOnly;
+    /** The compact widget's card, width to height: the time row with a little room around it. */
+    private static final float TIME_ONLY_ASPECT = 3f;
     private boolean alarmSet;
 
     /** Redraws on each second boundary so the colon blinks. */
@@ -126,13 +130,15 @@ final class LcdClockView extends View {
     }
 
     /**
-     * The home screen widget's picture (ClockWidget): the face as it is now, without the padlock,
-     * on a rounded black card of the outside screen's shape, as big as fits `widthPx` by
-     * `heightPx` (the picture is that card alone; the widget centres it).
+     * A home screen widget's picture (ClockWidget): the face as it is now, without the padlock, on
+     * a rounded black card of the outside screen's shape, as big as fits `widthPx` by `heightPx`
+     * (the picture is that card alone; the widget centres it). With `timeOnly`, just the time
+     * row (time, AM/PM, bell) on a wider card.
      */
-    static Bitmap widget(Context context, int widthPx, int heightPx) {
-        int w = Math.min(widthPx, Math.round(heightPx * 368f / 194f));
-        int h = Math.min(heightPx, Math.round(widthPx * 194f / 368f));
+    static Bitmap widget(Context context, int widthPx, int heightPx, boolean timeOnly) {
+        float aspect = timeOnly ? TIME_ONLY_ASPECT : 368f / 194f;
+        int w = Math.min(widthPx, Math.round(heightPx * aspect));
+        int h = Math.min(heightPx, Math.round(widthPx / aspect));
         Bitmap bitmap = Bitmap.createBitmap(Math.max(1, w), Math.max(1, h), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bitmap);
         Paint black = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -141,6 +147,7 @@ final class LcdClockView extends View {
         canvas.drawRoundRect(0, 0, w, h, radius, radius, black);
         LcdClockView face = new LcdClockView(context, false);
         face.showLock = false;
+        face.timeOnly = timeOnly;
         face.setColor(Prefs.color(context));
         Calendar now = Calendar.getInstance();
         int hour = now.get(Calendar.HOUR_OF_DAY);
@@ -179,11 +186,12 @@ final class LcdClockView extends View {
         seg.textStyle(SegmentPainter.seg14(), 100);
         float ampmUnits = twelveHour ? AMPM_H * seg.textWidth("AM") / 100 : 0;
         float rowUnits = SegmentPainter.ROW_HHMM + COLUMN_GAP + Math.max(ampmUnits, BELL_H);
-        // Digit height half the screen, or less if the row would get too wide.
-        float digitH = Math.min(h * 0.5f, w * 0.88f / rowUnits);
+        // Digit height half the screen, or less if the row would get too wide; with just the time
+        // row, most of the height.
+        float digitH = timeOnly ? Math.min(h * 0.74f, w * 0.9f / rowUnits) : Math.min(h * 0.5f, w * 0.88f / rowUnits);
         float rowW = digitH * rowUnits;
-        float infoH = h * 0.11f;
-        float gap = h * 0.09f;
+        float infoH = timeOnly ? 0 : h * 0.11f;
+        float gap = timeOnly ? 0 : h * 0.09f;
         float top = (h - digitH - gap - infoH) / 2;
         float left = (w - rowW) / 2;
 
@@ -206,7 +214,9 @@ final class LcdClockView extends View {
                     locked ? color : SegmentPainter.dim(color));
         }
         seg.bell(canvas, columnX, top + digitH, digitH * BELL_H, alarmSet, color);
-        drawInfo(canvas, left, left + rowW, top + digitH + gap + infoH, infoH, now);
+        if (!timeOnly) {
+            drawInfo(canvas, left, left + rowW, top + digitH + gap + infoH, infoH, now);
+        }
         canvas.restore();
     }
 

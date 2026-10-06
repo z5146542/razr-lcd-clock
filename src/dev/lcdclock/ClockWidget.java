@@ -15,8 +15,9 @@ import android.view.Display;
 import android.widget.RemoteViews;
 
 /**
- * The 3x2 home screen widget: the clock face as on the outside screen (time, AM/PM, alarm bell,
- * date and battery), without the padlock, as a picture LcdClockView draws. A widget can't run the
+ * The home screen widgets: "LCD Clock face" (3x2), the clock face as on the outside screen (time,
+ * AM/PM, alarm bell, date and battery) without the padlock, and "LCD Clock time" (TimeWidget,
+ * 3x1), just the time row; each a picture LcdClockView draws. A widget can't run the
  * face itself, so the picture is redrawn each minute, but only while the inside screen is on (the
  * minute tick and screen-on reach the receiver ButtonService registers): nothing runs for it while
  * the phone is closed or its screen is off. Tapping it opens the LCD Clock app.
@@ -64,15 +65,23 @@ public class ClockWidget extends AppWidgetProvider {
         return inner != null && inner.getState() == Display.STATE_ON;
     }
 
-    /** Redraws every LCD Clock widget at its size. */
+    /** Redraws every LCD Clock widget, of both kinds, at its size. */
     static void update(Context context) {
         AppWidgetManager manager = AppWidgetManager.getInstance(context);
         for (int id : manager.getAppWidgetIds(new ComponentName(context, ClockWidget.class))) {
-            update(context, manager, id);
+            update(context, manager, id, false);
+        }
+        for (int id : manager.getAppWidgetIds(new ComponentName(context, TimeWidget.class))) {
+            update(context, manager, id, true);
         }
     }
 
-    private static void update(Context context, AppWidgetManager manager, int id) {
+    /** The time row only: TimeWidget. */
+    boolean timeOnly() {
+        return false;
+    }
+
+    private static void update(Context context, AppWidgetManager manager, int id, boolean timeOnly) {
         // Portrait sizes: the minimum width and the maximum height, in dp.
         Bundle options = manager.getAppWidgetOptions(id);
         float density = context.getResources().getDisplayMetrics().density;
@@ -89,7 +98,7 @@ public class ClockWidget extends AppWidgetProvider {
         int w = Math.max(1, Math.round(widthDp * density * scale));
         int h = Math.max(1, Math.round(heightDp * density * scale));
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clock_widget);
-        views.setImageViewBitmap(R.id.clock_widget_face, LcdClockView.widget(context, w, h));
+        views.setImageViewBitmap(R.id.clock_widget_face, LcdClockView.widget(context, w, h, timeOnly));
         views.setOnClickPendingIntent(R.id.clock_widget_face, PendingIntent.getActivity(context, 0,
                 new Intent(context, PreviewActivity.class), PendingIntent.FLAG_IMMUTABLE));
         try {
@@ -102,12 +111,12 @@ public class ClockWidget extends AppWidgetProvider {
     @Override
     public void onUpdate(Context context, AppWidgetManager manager, int[] ids) {
         for (int id : ids) {
-            update(context, manager, id);
+            update(context, manager, id, timeOnly());
         }
     }
 
     @Override
     public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int id, Bundle options) {
-        update(context, manager, id); // resized
+        update(context, manager, id, timeOnly()); // resized
     }
 }

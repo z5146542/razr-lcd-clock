@@ -32,5 +32,7 @@ fi
 echo "Built $(pwd)/lcd-clock.apk"
 
 if [ "${1:-}" = install ]; then
-    adb install -r lcd-clock.apk
+    # Not incremental: after incremental installs the launcher kept loading home screen widgets
+    # from the old APK's path ("Can't load widget").
+    adb install --no-incremental -r lcd-clock.apk
 fi

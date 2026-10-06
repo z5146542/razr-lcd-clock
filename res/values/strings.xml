@@ -67,6 +67,8 @@
     </string-array>
     <string name="widget_name">LCD Clock face</string>
     <string name="widget_description">The outside screen\'s clock face on your home screen</string>
+    <string name="time_widget_name">LCD Clock time</string>
+    <string name="time_widget_description">Just the time from the outside screen\'s clock face</string>
     <string name="quick_home">Home Assistant: %1$s</string>
     <string name="quick_not_set_up">%1$s (not set up)</string>
     <string name="wg_title">WireGuard</string>
