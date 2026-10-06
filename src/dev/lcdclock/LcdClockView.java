@@ -42,6 +42,8 @@ final class LcdClockView extends View {
     private final Path path = new Path();
     private int color = Palette.PRESETS[0];
     private boolean visibleToUser = true;
+    /** The padlock in the column after the minutes; not on the home screen widget. */
+    private boolean showLock = true;
     private boolean alarmSet;
 
     /** Redraws on each second boundary so the colon blinks. */
@@ -123,6 +125,29 @@ final class LcdClockView extends View {
         return bitmap;
     }
 
+    /**
+     * The home screen widget's picture (ClockWidget): the face as it is now, without the padlock,
+     * on a rounded black card `widthPx` by `heightPx`.
+     */
+    static Bitmap widget(Context context, int widthPx, int heightPx) {
+        Bitmap bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        Paint black = new Paint(Paint.ANTI_ALIAS_FLAG);
+        black.setColor(Color.BLACK);
+        float radius = Math.min(widthPx, heightPx) * 0.12f;
+        canvas.drawRoundRect(0, 0, widthPx, heightPx, radius, radius, black);
+        LcdClockView face = new LcdClockView(context, false);
+        face.showLock = false;
+        face.setColor(Prefs.color(context));
+        Calendar now = Calendar.getInstance();
+        int hour = now.get(Calendar.HOUR_OF_DAY);
+        boolean twelveHour = !DateFormat.is24HourFormat(context);
+        int displayHour = twelveHour ? (hour % 12 == 0 ? 12 : hour % 12) : hour;
+        face.drawFace(canvas, widthPx, heightPx, displayHour, twelveHour, hour >= 12, now.get(Calendar.MINUTE), true,
+                now);
+        return bitmap;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.drawColor(Color.BLACK);
@@ -173,9 +198,11 @@ final class LcdClockView extends View {
         }
         float columnX = x + digitH * BELL_H / 2;
         float lockH = digitH * LOCK_H;
-        boolean locked = preview || Lock.locked(getContext());
-        Lock.drawBadge(canvas, columnX - Lock.badgeWidth(lockH) / 2, top + digitH * LOCK_Y - lockH / 2, lockH,
-                locked ? color : SegmentPainter.dim(color));
+        if (showLock) {
+            boolean locked = preview || Lock.locked(getContext());
+            Lock.drawBadge(canvas, columnX - Lock.badgeWidth(lockH) / 2, top + digitH * LOCK_Y - lockH / 2, lockH,
+                    locked ? color : SegmentPainter.dim(color));
+        }
         seg.bell(canvas, columnX, top + digitH, digitH * BELL_H, alarmSet, color);
         drawInfo(canvas, left, left + rowW, top + digitH + gap + infoH, infoH, now);
         canvas.restore();
