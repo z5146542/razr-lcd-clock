@@ -32,7 +32,11 @@ fi
 echo "Built $(pwd)/lcd-clock.apk"
 
 if [ "${1:-}" = install ]; then
-    # Not incremental: after incremental installs the launcher kept loading home screen widgets
-    # from the old APK's path ("Can't load widget").
     adb install --no-incremental -r lcd-clock.apk
+    # Motorola's launcher keeps loading home screen widgets from the old APK's path after an
+    # update ("Can't load widget") until it restarts: restart it if LCD Clock widgets are placed.
+    if adb shell dumpsys appwidget | grep -A2 "pkg:com.motorola.launcher3" | grep -q "dev.lcdclock" \
+        || adb shell dumpsys appwidget | grep -B1 "cmp:ComponentInfo{dev.lcdclock/" | grep -q "launcher3"; then
+        adb shell am force-stop com.motorola.launcher3
+    fi
 fi

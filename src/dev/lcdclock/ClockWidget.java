@@ -8,6 +8,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,7 +17,8 @@ import android.view.Display;
 import android.widget.RemoteViews;
 
 /**
- * The home screen widgets: "LCD Clock face" (3x2), the clock face as on the outside screen (time,
+ * The home screen widgets: "LCD Clock face" (4x2, its card no wider than at 3x2 and centred), the
+ * clock face as on the outside screen (time,
  * AM/PM, alarm bell, date and battery) without the padlock, and "LCD Clock time" (TimeWidget,
  * 3x1), just the time row; each a picture LcdClockView draws. A widget can't run the
  * face itself, so the picture is redrawn each minute, but only while the inside screen is on (the
@@ -25,6 +28,11 @@ import android.widget.RemoteViews;
 public class ClockWidget extends AppWidgetProvider {
     /** Largest picture drawn, in pixels across, however big the widget is. */
     private static final int MAX_WIDTH_PX = 1200;
+    /**
+     * The face widget's card is no wider than this (its width at 3x2 on the razr's launcher), so in
+     * its 4x2 slot it sits centred with room either side.
+     */
+    private static final int FACE_CARD_MAX_DP = 296;
 
     private static Context app;
 
@@ -98,7 +106,8 @@ public class ClockWidget extends AppWidgetProvider {
         int w = Math.max(1, Math.round(widthDp * density * scale));
         int h = Math.max(1, Math.round(heightDp * density * scale));
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.clock_widget);
-        views.setImageViewBitmap(R.id.clock_widget_face, LcdClockView.widget(context, w, h, timeOnly));
+        views.setImageViewBitmap(R.id.clock_widget_face, picture(context, w, h, timeOnly,
+                Math.round(FACE_CARD_MAX_DP * density * scale)));
         views.setOnClickPendingIntent(R.id.clock_widget_face, PendingIntent.getActivity(context, 0,
                 new Intent(context, PreviewActivity.class), PendingIntent.FLAG_IMMUTABLE));
         try {
@@ -106,6 +115,22 @@ public class ClockWidget extends AppWidgetProvider {
         } catch (RuntimeException e) {
             Log.w(Binders.TAG, "widget " + id + ": can't update", e);
         }
+    }
+
+    /**
+     * The widget's picture, its full size: the card in the middle (the face's no wider than
+     * `maxCardPx`), clear around it. The picture fills the widget, so a smaller one would be
+     * scaled back up rather than centred.
+     */
+    private static Bitmap picture(Context context, int w, int h, boolean timeOnly, int maxCardPx) {
+        Bitmap card = LcdClockView.widget(context, timeOnly ? w : Math.min(w, maxCardPx), h, timeOnly);
+        if (card.getWidth() == w && card.getHeight() == h) {
+            return card;
+        }
+        Bitmap picture = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        new Canvas(picture).drawBitmap(card, (w - card.getWidth()) / 2f, (h - card.getHeight()) / 2f, null);
+        card.recycle();
+        return picture;
     }
 
     @Override
