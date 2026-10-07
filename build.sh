@@ -1,17 +1,33 @@
 #!/usr/bin/env bash
 # Builds lcd-clock.apk without Gradle: aapt2 -> javac -> d8 -> zipalign -> apksigner.
-# Usage: ./build.sh [install]
+# Needs the Android SDK (platform 35 and build-tools), a JDK 17 or newer, and zip.
+# Usage: ./build.sh [install]   (install: then ./install.sh puts it on the phone)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SDK=${ANDROID_HOME:-$HOME/Android/Sdk}
+die() { echo "build.sh: $*" >&2; exit 1; }
+
+SDK=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}
+if [ ! -d "$SDK" ] && [ -d "$HOME/Library/Android/sdk" ]; then
+    SDK=$HOME/Library/Android/sdk # Android Studio's place on macOS
+fi
+[ -d "$SDK" ] || die "no Android SDK at $SDK: install one and set ANDROID_HOME"
+# build-tools 37.0.0 if it's there, else the newest installed.
 BT=$SDK/build-tools/37.0.0
+if [ ! -d "$BT" ]; then
+    BT=$(ls -d "$SDK"/build-tools/*/ 2>/dev/null | sort -V | tail -n 1)
+    BT=${BT%/}
+fi
+[ -n "$BT" ] && [ -x "$BT/aapt2" ] || die "no build-tools in $SDK (sdkmanager \"build-tools;37.0.0\")"
 JAR=$SDK/platforms/android-35/android.jar
+[ -f "$JAR" ] || die "no Android 15 platform in $SDK (sdkmanager \"platforms;android-35\")"
 OUT=build
 # Fedora's java-*-headless has no javac; fall back to the portable JDK next to the SDK.
 if ! command -v javac >/dev/null; then
     export PATH="$HOME/Android/jdk/bin:$PATH"
 fi
+command -v javac >/dev/null || die "no javac: install a JDK 17 or newer"
+command -v zip >/dev/null || die "no zip: install it"
 
 rm -rf "$OUT"
 mkdir -p "$OUT/gen" "$OUT/classes"
@@ -32,11 +48,5 @@ fi
 echo "Built $(pwd)/lcd-clock.apk"
 
 if [ "${1:-}" = install ]; then
-    adb install --no-incremental -r lcd-clock.apk
-    # Motorola's launcher keeps loading home screen widgets from the old APK's path after an
-    # update ("Can't load widget") until it restarts: restart it if LCD Clock widgets are placed.
-    if adb shell dumpsys appwidget | grep -A2 "pkg:com.motorola.launcher3" | grep -q "dev.lcdclock" \
-        || adb shell dumpsys appwidget | grep -B1 "cmp:ComponentInfo{dev.lcdclock/" | grep -q "launcher3"; then
-        adb shell am force-stop com.motorola.launcher3
-    fi
+    exec ./install.sh
 fi
