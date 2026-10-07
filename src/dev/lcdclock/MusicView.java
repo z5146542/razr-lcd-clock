@@ -265,11 +265,11 @@ final class MusicView extends View {
         if (textW <= boxW) {
             canvas.drawText(title, left, baseline, titlePaint);
         } else {
-            float gapW = titlePaint.measureText("     ");
-            long t = Math.max(0, SystemClock.uptimeMillis() - titleSince - MARQUEE_HOLD_MS);
-            float offset = (t * speed / 1000f) % (textW + gapW);
+            int period = Math.round(textW + titlePaint.measureText("     "));
+            long t = Math.max(0, getDrawingTime() - titleSince - MARQUEE_HOLD_MS);
+            long offset = CoverPage.marqueeOffset(this, t, speed) % period;
             canvas.drawText(title, left - offset, baseline, titlePaint);
-            canvas.drawText(title, left - offset + textW + gapW, baseline, titlePaint);
+            canvas.drawText(title, left - offset + period, baseline, titlePaint);
             postInvalidateOnAnimation();
         }
         canvas.restore();

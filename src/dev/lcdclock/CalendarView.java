@@ -26,13 +26,15 @@ import java.util.concurrent.Executors;
 
 /**
  * The cover screen's CALENDAR page: events from now to a week ahead from the phone's visible
- * calendars, three rows to the screen: a bar in the calendar's colour, the start time in segment
+ * calendars, two rows to the screen: a bar in the calendar's colour, the start time in segment
  * digits (lit while it's on), the title (scrolling when it's too long), and the day and place
  * underneath. Drag up or down to scroll.
  */
 final class CalendarView extends CoverPage {
     private static final long WEEK_MS = 7L * 24 * 60 * 60 * 1000;
     private static final long RELOAD_MS = 60_000;
+    /** Events to the screen; everything in a row scales with its height. */
+    private static final int ROWS = 2;
     private static final ExecutorService loader = Executors.newSingleThreadExecutor();
 
     private static final class Event {
@@ -154,15 +156,16 @@ final class CalendarView extends CoverPage {
             return;
         }
 
-        rowH = (bottom - top) / 3;
+        rowH = (bottom - top) / ROWS;
         maxScroll = Math.max(0, events.size() * rowH - (bottom - top));
         scroll = Math.max(0, Math.min(scroll, maxScroll));
         long now = System.currentTimeMillis();
         boolean twelveHour = !DateFormat.is24HourFormat(context);
-        float timeH = rowH * 0.34f;
+        float timeH = rowH * 0.27f;
         seg.textStyle(SegmentPainter.seg7(), timeH);
         float timeW = seg.textWidth("88:88");
-        float titleX = left + rowH * 0.2f + timeW + rowH * 0.25f;
+        float timeX = left + rowH * 0.15f;
+        float titleX = timeX + timeW + rowH * 0.18f;
         boolean scrolling = false;
 
         canvas.save();
@@ -176,10 +179,9 @@ final class CalendarView extends CoverPage {
             boolean on = e.begin <= now && now < e.end;
             // Calendar colour bar.
             fill.setColor(e.color);
-            canvas.drawRect(left, rowTop + rowH * 0.1f, left + rowH * 0.07f, rowTop + rowH * 0.9f, fill);
+            canvas.drawRect(left, rowTop + rowH * 0.12f, left + rowH * 0.05f, rowTop + rowH * 0.88f, fill);
             // Start time, or ALL for all day; lit while it's happening.
             float base = rowTop + rowH * 0.5f + timeH / 2;
-            float timeX = left + rowH * 0.2f;
             if (e.allDay) {
                 label(canvas, "ALL", timeX, base, timeH, on ? color : Color.WHITE);
             } else {
@@ -195,11 +197,11 @@ final class CalendarView extends CoverPage {
                 canvas.restore();
             }
             // Title, then day and place.
-            scrolling |= marquee(canvas, e.title, titleX, rowTop + rowH * 0.48f, rowH * 0.4f, right - titleX,
+            scrolling |= marquee(canvas, e.title, titleX, rowTop + rowH * 0.46f, rowH * 0.34f, right - titleX,
                     Color.WHITE);
             String day = dayLabel(e.begin, now, twelveHour && !e.allDay ? amPm(e.begin) : "");
             String sub = e.place == null || e.place.isEmpty() ? day : day + " · " + e.place;
-            line(canvas, sub, titleX, rowTop + rowH * 0.87f, rowH * 0.3f, right - titleX, GREY);
+            line(canvas, sub, titleX, rowTop + rowH * 0.84f, rowH * 0.27f, right - titleX, GREY);
         }
         canvas.restore();
         if (scrolling) {

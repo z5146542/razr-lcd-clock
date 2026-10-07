@@ -323,15 +323,29 @@ abstract class CoverPage extends View {
             return false;
         }
         Paint.FontMetrics metrics = text.getFontMetrics();
-        float gap = text.measureText("     ");
-        long t = Math.max(0, SystemClock.uptimeMillis() - shownAt - 1500);
-        float offset = (t * bh * MARQUEE_SPEED / 1000f) % (textW + gap);
+        int period = Math.round(textW + text.measureText("     "));
+        long t = Math.max(0, getDrawingTime() - shownAt - 1500);
+        long offset = marqueeOffset(this, t, bh * MARQUEE_SPEED) % period;
         canvas.save();
         canvas.clipRect(x, baseline + metrics.ascent, x + width, baseline + metrics.descent);
         canvas.drawText(s, x - offset, baseline, text);
-        canvas.drawText(s, x - offset + textW + gap, baseline, text);
+        canvas.drawText(s, x - offset + period, baseline, text);
         canvas.restore();
         return true;
+    }
+
+    /**
+     * How far scrolling text has moved `ms` (frame time) after it started, at about `speed` px a
+     * second: always whole pixels, the same number every frame (or one every so many frames).
+     * Moved by fractions of a pixel, each letter snapped to the pixel grid on its own, so letters
+     * stepped at different moments and the text shimmered instead of sliding.
+     */
+    static long marqueeOffset(View view, long ms, float speed) {
+        android.view.Display display = view.getDisplay();
+        float fps = display != null && display.getRefreshRate() > 0 ? display.getRefreshRate() : 60;
+        long frames = Math.round(ms * fps / 1000.0);
+        float perFrame = speed / fps;
+        return perFrame >= 1 ? frames * Math.round(perFrame) : frames / Math.max(1, Math.round(1 / perFrame));
     }
 
     private int hit(float x, float y) {
