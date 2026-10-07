@@ -20,7 +20,7 @@
     <string name="panel_notices">Notifications</string>
     <string name="panel_notices_help">Swipe up on the clock face. Tap one to read all of it on its own page; dismiss one with ×, or CLEAR them all. While the phone is locked they\'re restricted (just the app and its lock-screen text, whatever your lock screen is set to show); unlock with the fingerprint to see the rest.</string>
     <string name="panel_controls">Quick controls</string>
-    <string name="panel_controls_help">Swipe down on the clock face. Choose and order the controls below. SOS flashes ··· ——— ··· with the flashlight until tapped again, even with the screen off or the phone locked. BEDTIME switches Digital Wellbeing\'s Bedtime mode on and off. Home Assistant and VPN work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it. Android doesn\'t let apps switch Wi-Fi, mobile data or Bluetooth.</string>
+    <string name="panel_controls_help">Swipe down on the clock face. Choose and order the controls below. Hold SOS for 3 seconds to start it: ··· ——— ··· with the flashlight, vibration and a loud beep at full alarm volume, until tapped again, even with the screen off or the phone locked. BEDTIME switches Digital Wellbeing\'s Bedtime mode on and off. Home Assistant and VPN work only while the phone is unlocked: tapping one while locked asks for your fingerprint, then switches it. Android doesn\'t let apps switch Wi-Fi, mobile data or Bluetooth.</string>
     <string-array name="quick_names">
         <item>Flashlight</item>
         <item>SOS signal (flashlight Morse code)</item>

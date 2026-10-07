@@ -66,6 +66,42 @@ abstract class CoverPage extends View {
     Runnable onCloseDrag;
     /** How far past the end of the list the closing drag has pulled the page, in px. */
     private float pulled;
+    /** When the held control was touched, while it's one that needs holding; 0 otherwise. */
+    private long holdStart;
+    /** The held control has acted (its time was reached before the finger lifted). */
+    private boolean held;
+
+    /** Runs a held control once its hold time is reached, if the finger is still on it. */
+    private final Runnable holdDone = () -> {
+        if (pressed != NONE && !dragging && holdStart != 0) {
+            held = true;
+            int control = pressed;
+            if (perform(control)) {
+                vibrate(VibrationEffect.EFFECT_HEAVY_CLICK);
+            }
+            invalidate();
+        }
+    };
+
+    /** Redraws the hold progress, with a tick at each whole second. */
+    private final Runnable holdTick = new Runnable() {
+        private long lastSecond;
+
+        @Override
+        public void run() {
+            if (holdStart == 0 || held) {
+                lastSecond = 0;
+                return;
+            }
+            long second = (System.currentTimeMillis() - holdStart) / 1000;
+            if (second > lastSecond) {
+                lastSecond = second;
+                vibrate(VibrationEffect.EFFECT_TICK);
+            }
+            invalidate();
+            postDelayed(this, 50);
+        }
+    };
 
     CoverPage(Context context) {
         super(context);
@@ -99,6 +135,32 @@ abstract class CoverPage extends View {
     /** A tapped control; return true to buzz. */
     boolean perform(int id) {
         return false;
+    }
+
+    /** How long a control must be held before it acts; 0 for an ordinary tap. */
+    long holdMs(int id) {
+        return 0;
+    }
+
+    /** A control that needs holding was let go too soon. */
+    void onHoldTooShort(int id) {
+    }
+
+    /** How far `id` is through its hold, 0 to 1, while it's being held; otherwise -1. */
+    float holdProgress(int id) {
+        long ms = holdStart == 0 || pressed != id ? 0 : holdMs(id);
+        return ms <= 0 ? -1 : Math.min(1f, (System.currentTimeMillis() - holdStart) / (float) ms);
+    }
+
+    private void cancelHold() {
+        removeCallbacks(holdDone);
+        removeCallbacks(holdTick);
+        holdStart = 0;
+    }
+
+    private void vibrate(int effect) {
+        getContext().getSystemService(VibratorManager.class).getDefaultVibrator()
+                .vibrate(VibrationEffect.createPredefined(effect));
     }
 
     /** Height of the bottom button row, and its top. */
@@ -284,19 +346,29 @@ abstract class CoverPage extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_DOWN: {
                 pressed = hit(event.getX(), event.getY());
                 downY = event.getY();
                 lastY = downY;
                 dragging = false;
                 pulled = 0;
+                cancelHold();
+                held = false;
+                long hold = pressed == NONE ? 0 : holdMs(pressed);
+                if (hold > 0) {
+                    holdStart = System.currentTimeMillis();
+                    postDelayed(holdDone, hold);
+                    post(holdTick);
+                }
                 invalidate();
                 return true;
+            }
             case MotionEvent.ACTION_MOVE:
                 if ((maxScroll > 0 || closeDrag != 0) && !dragging
                         && Math.abs(event.getY() - downY) > ViewConfiguration.get(getContext()).getScaledTouchSlop()) {
                     dragging = true;
                     pressed = NONE;
+                    cancelHold();
                 }
                 if (dragging) {
                     drag(event.getY() - lastY);
@@ -304,6 +376,7 @@ abstract class CoverPage extends View {
                     invalidate();
                 } else if (pressed != NONE && hit(event.getX(), event.getY()) != pressed) {
                     pressed = NONE;
+                    cancelHold();
                     invalidate();
                 }
                 return true;
@@ -319,6 +392,16 @@ abstract class CoverPage extends View {
                 }
                 int control = pressed;
                 pressed = NONE;
+                if (holdStart != 0) {
+                    // A control that needs holding: it already acted if held long enough.
+                    boolean acted = held;
+                    cancelHold();
+                    if (!acted && !dragging && control != NONE) {
+                        onHoldTooShort(control);
+                    }
+                    invalidate();
+                    return true;
+                }
                 if (!dragging && control != NONE && hit(event.getX(), event.getY()) == control && perform(control)) {
                     getContext().getSystemService(VibratorManager.class).getDefaultVibrator()
                             .vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK));
@@ -327,6 +410,7 @@ abstract class CoverPage extends View {
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 pressed = NONE;
+                cancelHold();
                 pulled = 0;
                 animate().translationY(0).setDuration(120);
                 invalidate();

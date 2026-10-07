@@ -32,6 +32,10 @@ final class QuickView extends CoverPage {
     /** The locked control tapped last, and when its padlock stops being lit. */
     private String refused;
     private long refusedUntil;
+    /** SOS only starts after a 3-second hold, so a stray touch can't set off the siren. */
+    private static final long SOS_HOLD_MS = 3000;
+    /** Until when SOS shows HOLD 3S, after a touch let go too soon. */
+    private long holdHintUntil;
 
     private final Runnable tick = new Runnable() {
         @Override
@@ -135,7 +139,7 @@ final class QuickView extends CoverPage {
                 break;
             case QuickControls.SOS:
                 on = SosService.isRunning();
-                name = "SOS";
+                name = !on && System.currentTimeMillis() < holdHintUntil ? "HOLD 3S" : "SOS";
                 break;
             case QuickControls.DND:
                 on = QuickControls.dndOn(context);
@@ -180,6 +184,18 @@ final class QuickView extends CoverPage {
         }
         boolean lit = on && !QuickControls.VOLUME.equals(control) && !QuickControls.MOTOROLA.equals(control);
         button(canvas, TILE + index, r, lit, true, color);
+        float progress = holdProgress(TILE + index);
+        if (progress >= 0) {
+            // Filling up left to right while held.
+            float radius = r.height() * 0.28f;
+            canvas.save();
+            icon.reset();
+            icon.addRoundRect(r, radius, radius, Path.Direction.CW);
+            canvas.clipPath(icon);
+            fill.setColor((color & 0x00FFFFFF) | 0x99000000);
+            canvas.drawRect(r.left, r.top, r.left + r.width() * progress, r.bottom, fill);
+            canvas.restore();
+        }
         int ink = lit ? color : Color.WHITE;
         if (QuickControls.needsUnlock(control) && Lock.locked(context)) {
             float s = r.height() * 0.2f;
@@ -327,6 +343,25 @@ final class QuickView extends CoverPage {
                 break;
             }
         }
+    }
+
+    /** The control a tile id stands for, or null. */
+    private String controlAt(int id) {
+        List<String> controls = controls();
+        int index = id - TILE;
+        return index >= 0 && index < controls.size() ? controls.get(index) : null;
+    }
+
+    @Override
+    long holdMs(int id) {
+        return QuickControls.SOS.equals(controlAt(id)) && !SosService.isRunning() ? SOS_HOLD_MS : 0;
+    }
+
+    @Override
+    void onHoldTooShort(int id) {
+        holdHintUntil = System.currentTimeMillis() + 1500;
+        invalidate();
+        postInvalidateDelayed(1600);
     }
 
     @Override

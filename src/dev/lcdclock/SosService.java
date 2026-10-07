@@ -10,18 +10,29 @@ import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraManager;
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.VibrationAttributes;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
 import android.util.Log;
 
 /**
- * SOS in Morse code with the flashlight, the quick controls' SOS tile: ··· ——— ··· over and over,
- * in standard timing (a dot 250 ms, a dash three dots, a dot's gap inside a letter, three between
- * letters, seven before it starts again). A foreground service that keeps the CPU awake, so it
- * carries on with the screen off and the phone locked, until SOS or LIGHT is tapped again or its
- * notification's Stop.
+ * SOS in Morse code, the quick controls' SOS tile (held for 3 seconds): ··· ——— ··· over and over
+ * with the flashlight, a vibration and a loud beep on every mark, in standard timing (a dot 250 ms,
+ * a dash three dots, a dot's gap inside a letter, three between letters, seven before it starts
+ * again). The beep is a ~2.8 kHz tone driven nearly square, where hearing is most sensitive, at
+ * full alarm volume (the alarm volume is put back afterwards). Without a flashlight (another app
+ * has the camera) it carries on with sound and vibration. A foreground service that keeps the CPU
+ * awake, so it carries on with the screen off and the phone locked, until SOS or LIGHT is tapped
+ * again or its notification's Stop.
  */
 public class SosService extends Service {
     static final String ACTION_START = "dev.lcdclock.action.SOS";
@@ -41,19 +52,71 @@ public class SosService extends Service {
     private PowerManager.WakeLock wakeLock;
     private String camera;
     private int step;
+    private Vibrator vibrator;
+    /** The beep for a dot and for a dash, ready to replay. */
+    private AudioTrack dotTone;
+    private AudioTrack dashTone;
+    /** The alarm volume before SOS turned it up, or -1. */
+    private int savedAlarmVolume = -1;
+    private static final int SAMPLE_RATE = 48000;
+    private static final double TONE_HZ = 2800;
+    private static final AudioAttributes ALARM_AUDIO = new AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build();
 
     private final Runnable blink = new Runnable() {
         @Override
         public void run() {
-            if (!torch(step % 2 == 0)) {
-                stopSelf();
-                return;
+            boolean on = step % 2 == 0;
+            long duration = PATTERN[step] * UNIT_MS;
+            torch(on); // without a flashlight, the sound and vibration carry on
+            if (on) {
+                mark(duration, PATTERN[step] == 1 ? dotTone : dashTone);
             }
-            long delay = PATTERN[step] * UNIT_MS;
             step = (step + 1) % PATTERN.length;
-            handler.postDelayed(this, delay);
+            handler.postDelayed(this, duration);
         }
     };
+
+    /** A dot or a dash: vibrate and beep for its length (each mark starts afresh, so a screen-off can't stop them). */
+    private void mark(long duration, AudioTrack tone) {
+        vibrator.vibrate(VibrationEffect.createOneShot(duration, 255),
+                VibrationAttributes.createForUsage(VibrationAttributes.USAGE_ALARM));
+        if (tone != null) {
+            try {
+                tone.stop();
+                tone.reloadStaticData();
+                tone.play();
+            } catch (IllegalStateException e) {
+                Log.w(Binders.TAG, "sos: can't beep", e);
+            }
+        }
+    }
+
+    /** A beep `ms` long: a tone clipped nearly square (louder on a phone speaker), with 5 ms fades. */
+    private static AudioTrack tone(long ms) {
+        int n = (int) (SAMPLE_RATE * ms / 1000);
+        int fade = SAMPLE_RATE / 200;
+        short[] pcm = new short[n];
+        for (int i = 0; i < n; i++) {
+            double wave = Math.max(-1, Math.min(1, 3 * Math.sin(2 * Math.PI * TONE_HZ * i / SAMPLE_RATE)));
+            double envelope = Math.min(1, Math.min(i, n - 1 - i) / (double) fade);
+            pcm[i] = (short) (wave * envelope * 32000);
+        }
+        AudioTrack track = new AudioTrack.Builder()
+                .setAudioAttributes(ALARM_AUDIO)
+                .setAudioFormat(new AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(SAMPLE_RATE)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build())
+                .setTransferMode(AudioTrack.MODE_STATIC)
+                .setBufferSizeInBytes(n * 2)
+                .build();
+        track.write(pcm, 0, n);
+        return track;
+    }
 
     static boolean isRunning() {
         return running;
@@ -76,9 +139,22 @@ public class SosService extends Service {
             startForeground(NOTIFICATION_ID, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             camera = QuickControls.torchCamera(this);
             if (camera == null) {
-                Log.w(Binders.TAG, "sos: no flashlight");
-                stopSelf();
-                return START_NOT_STICKY;
+                Log.w(Binders.TAG, "sos: no flashlight, sound and vibration only");
+            }
+            vibrator = getSystemService(VibratorManager.class).getDefaultVibrator();
+            try {
+                dotTone = tone(UNIT_MS);
+                dashTone = tone(3 * UNIT_MS);
+            } catch (RuntimeException e) {
+                Log.w(Binders.TAG, "sos: no sound", e);
+            }
+            AudioManager audio = getSystemService(AudioManager.class);
+            try {
+                savedAlarmVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM);
+                audio.setStreamVolume(AudioManager.STREAM_ALARM, audio.getStreamMaxVolume(AudioManager.STREAM_ALARM), 0);
+            } catch (SecurityException e) {
+                savedAlarmVolume = -1;
+                Log.w(Binders.TAG, "sos: can't turn the alarm volume up", e);
             }
             wakeLock = getSystemService(PowerManager.class).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LcdClock:sos");
             wakeLock.acquire();
@@ -124,6 +200,22 @@ public class SosService extends Service {
         handler.removeCallbacksAndMessages(null);
         thread.quitSafely();
         torch(false);
+        vibrator.cancel();
+        for (AudioTrack tone : new AudioTrack[] {dotTone, dashTone}) {
+            if (tone != null) {
+                tone.release();
+            }
+        }
+        dotTone = null;
+        dashTone = null;
+        if (savedAlarmVolume >= 0) {
+            try {
+                getSystemService(AudioManager.class).setStreamVolume(AudioManager.STREAM_ALARM, savedAlarmVolume, 0);
+            } catch (SecurityException e) {
+                Log.w(Binders.TAG, "sos: can't put the alarm volume back", e);
+            }
+            savedAlarmVolume = -1;
+        }
         if (wakeLock.isHeld()) {
             wakeLock.release();
         }
