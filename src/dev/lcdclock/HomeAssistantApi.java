@@ -31,7 +31,6 @@ import java.util.concurrent.Executors;
  * credential-encrypted app storage and is never logged.
  */
 final class HomeAssistantApi {
-    static final String DEFAULT_SERVER = "https://homeassistant.example.com";
     /** Entity domains offered in the picker; all have an on/off state. */
     private static final List<String> DOMAINS = Arrays.asList("switch", "light", "fan", "input_boolean");
 
@@ -47,8 +46,9 @@ final class HomeAssistantApi {
         return context.getSharedPreferences("home_assistant", Context.MODE_PRIVATE);
     }
 
+    /** The server's address as entered in the app, or "" before it's set. */
     static String server(Context context) {
-        return prefs(context).getString("server", DEFAULT_SERVER);
+        return prefs(context).getString("server", "");
     }
 
     static boolean hasToken(Context context) {
@@ -190,6 +190,9 @@ final class HomeAssistantApi {
     }
 
     private static String request(Context context, String method, String path, String body) throws IOException {
+        if (server(context).isEmpty()) {
+            throw new IOException("no server address");
+        }
         HttpURLConnection http = (HttpURLConnection) new URL(server(context) + path).openConnection();
         try {
             http.setRequestMethod(method);

@@ -185,7 +185,7 @@
     <string name="home_none">No actions yet.</string>
     <string name="ha_connection_title">Home Assistant connection (shows on/off)</string>
     <string name="ha_connection_help">With a long-lived access token (Home Assistant → your profile → Security), each HOME icon lights while any of its entities is on, and tapping switches them all off, or all on. Buttons without entities keep using their widget actions.</string>
-    <string name="ha_server_hint">Server address, e.g. https://…</string>
+    <string name="ha_server_hint">Server address, e.g. http://homeassistant.local:8123</string>
     <string name="ha_token_hint">Long-lived access token</string>
     <string name="ha_token_saved_hint">Token saved; paste a new one to replace it</string>
     <string name="ha_save_check">Save &amp; check</string>
