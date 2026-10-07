@@ -45,6 +45,10 @@ import java.util.List;
 public class PreviewActivity extends Activity {
     private static final int REQUEST_BIND = 1;
     private static final int REQUEST_CONFIGURE = 2;
+    private static final int REQUEST_SOUND_TIMER = 3;
+    private static final int REQUEST_SOUND_ALARM = 4;
+    /** The Timer and Alarm cards' Sound buttons, by kind, to relabel after a pick. */
+    private final java.util.Map<String, Button> soundButtons = new java.util.HashMap<>();
 
     private LcdClockView face;
     private AppWidgetHost widgetHost;
@@ -355,6 +359,9 @@ public class PreviewActivity extends Activity {
             vibrate.setChecked(Prefs.vibrate(this, kind));
             vibrate.setOnCheckedChangeListener((button, on) -> Prefs.setVibrate(this, kind, on));
             card.addView(vibrate);
+            Button sound = flatButton(getString(R.string.ring_sound, soundName(kind)), v -> pickSound(kind));
+            soundButtons.put(kind, sound);
+            card.addView(sound);
         }
         if (CoverActivity.PAGE_RECORDER.equals(page)) {
             card.addView(flatButton(getString(R.string.recordings_open),
@@ -797,9 +804,57 @@ public class PreviewActivity extends Activity {
         }
     }
 
+    /** Android's sound picker, with the phone's default alarm sound and Silent offered too. */
+    private void pickSound(String kind) {
+        boolean alarm = RingService.KIND_ALARM.equals(kind);
+        Intent pick = new Intent(android.media.RingtoneManager.ACTION_RINGTONE_PICKER)
+                .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TYPE, android.media.RingtoneManager.TYPE_ALARM)
+                .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_TITLE,
+                        getString(alarm ? R.string.ring_picker_alarm : R.string.ring_picker_timer))
+                .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, true)
+                .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_DEFAULT_URI,
+                        android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI)
+                .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, true)
+                .putExtra(android.media.RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Prefs.sound(this, kind));
+        try {
+            startActivityForResult(pick, alarm ? REQUEST_SOUND_ALARM : REQUEST_SOUND_TIMER);
+        } catch (android.content.ActivityNotFoundException e) {
+            Toast.makeText(this, R.string.ring_no_picker, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** "Silent", or the sound's title, e.g. "Default (Vltava)". */
+    private String soundName(String kind) {
+        android.net.Uri uri = Prefs.sound(this, kind);
+        if (uri == null) {
+            return getString(R.string.ring_silent);
+        }
+        try {
+            android.media.Ringtone ringtone = android.media.RingtoneManager.getRingtone(this, uri);
+            if (ringtone != null) {
+                return ringtone.getTitle(this);
+            }
+        } catch (RuntimeException ignored) {
+            // fall through to the generic name
+        }
+        return getString(R.string.ring_default);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_SOUND_TIMER || requestCode == REQUEST_SOUND_ALARM) {
+            if (resultCode == RESULT_OK && data != null) {
+                String kind = requestCode == REQUEST_SOUND_ALARM ? RingService.KIND_ALARM : RingService.KIND_TIMER;
+                Prefs.setSound(this, kind, data.getParcelableExtra(
+                        android.media.RingtoneManager.EXTRA_RINGTONE_PICKED_URI, android.net.Uri.class));
+                Button button = soundButtons.get(kind);
+                if (button != null) {
+                    button.setText(getString(R.string.ring_sound, soundName(kind)));
+                }
+            }
+            return;
+        }
         if (requestCode == REQUEST_BIND) {
             if (resultCode == RESULT_OK) {
                 configurePendingWidget();

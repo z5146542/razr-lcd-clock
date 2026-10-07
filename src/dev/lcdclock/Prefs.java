@@ -86,6 +86,22 @@ final class Prefs {
         get(context).edit().putBoolean("vibrate_" + kind, on).apply();
     }
 
+    /**
+     * The sound for the timer ("timer") or the alarm ("alarm"), chosen in the app: the phone's
+     * default alarm sound until changed; null for silent.
+     */
+    static android.net.Uri sound(Context context, String kind) {
+        String saved = get(context).getString("sound_" + kind, null);
+        if (saved == null) {
+            return android.provider.Settings.System.DEFAULT_ALARM_ALERT_URI;
+        }
+        return saved.isEmpty() ? null : android.net.Uri.parse(saved);
+    }
+
+    static void setSound(Context context, String kind, android.net.Uri uri) {
+        get(context).edit().putString("sound_" + kind, uri == null ? "" : uri.toString()).apply();
+    }
+
     static boolean keepPip(Context context) {
         return get(context).getBoolean(KEEP_PIP, true);
     }

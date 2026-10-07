@@ -13,6 +13,7 @@ import android.content.pm.ServiceInfo;
 import android.media.AudioAttributes;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -23,7 +24,8 @@ import android.os.VibratorManager;
 import android.provider.Settings;
 
 /**
- * Rings the alarm sound, and vibrates if that's switched on in the app for whatever is ringing,
+ * Rings the sound chosen in the app (the phone's alarm sound at first, or none), and vibrates if
+ * that's switched on, for whatever is ringing (the alarm's choice when both ring),
  * when the timer finishes or the alarm goes off, until stopped, snoozed (alarm only) or it gives
  * up: 2 minutes for the timer, 10 for the alarm. Stopping one of the two leaves the other ringing.
  *
@@ -41,6 +43,8 @@ public class RingService extends Service {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Runnable timeout = this::stopRinging;
     private Ringtone ringtone;
+    /** The sound playing, or null for silence. */
+    private Uri playing;
     private Vibrator vibrator;
     private String kind = KIND_TIMER;
     private static final long[] PATTERN = {0, 600, 400};
@@ -75,18 +79,7 @@ public class RingService extends Service {
             kind = intent.getStringExtra(EXTRA_KIND);
         }
         startForeground(1, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
-        if (ringtone == null) {
-            // The settings URI plays the user's alarm sound without needing media access.
-            ringtone = RingtoneManager.getRingtone(this, Settings.System.DEFAULT_ALARM_ALERT_URI);
-            if (ringtone != null) {
-                ringtone.setAudioAttributes(new AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build());
-                ringtone.setLooping(true);
-                ringtone.play();
-            }
-        }
+        updateSound();
         updateVibration();
         main.removeCallbacks(timeout);
         main.postDelayed(timeout, KIND_ALARM.equals(kind) ? 10 * 60_000 : 2 * 60_000);
@@ -114,6 +107,45 @@ public class RingService extends Service {
             builder.addAction(new Notification.Action.Builder(null, getString(R.string.snooze), snooze).build());
         }
         return builder.addAction(new Notification.Action.Builder(null, getString(R.string.stop), stop).build()).build();
+    }
+
+    /** Plays the sound chosen for what's ringing (the alarm's when both are), switching if it changed. */
+    private void updateSound() {
+        boolean alarm = AlarmController.state(this) == AlarmController.State.RINGING;
+        boolean timer = TimerController.state(this) == TimerController.State.RINGING;
+        Uri want = alarm || timer ? Prefs.sound(this, alarm ? KIND_ALARM : KIND_TIMER) : null;
+        if (java.util.Objects.equals(want, playing) && (want == null || ringtone != null)) {
+            return;
+        }
+        if (ringtone != null) {
+            ringtone.stop();
+            ringtone = null;
+        }
+        playing = want;
+        if (want != null) {
+            play(want);
+            // A sound that won't play (a deleted file, say): the phone's alarm sound instead.
+            main.postDelayed(() -> {
+                if (ringtone != null && !ringtone.isPlaying() && want.equals(playing)
+                        && !want.equals(Settings.System.DEFAULT_ALARM_ALERT_URI)) {
+                    ringtone.stop();
+                    play(Settings.System.DEFAULT_ALARM_ALERT_URI);
+                }
+            }, 1000);
+        }
+    }
+
+    private void play(Uri uri) {
+        ringtone = RingtoneManager.getRingtone(this, uri);
+        if (ringtone == null) {
+            return;
+        }
+        ringtone.setAudioAttributes(new AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build());
+        ringtone.setLooping(true);
+        ringtone.play();
     }
 
     /** Vibrates while anything ringing has vibration switched on; (re)starts the pattern. */
@@ -155,6 +187,7 @@ public class RingService extends Service {
         }
         kind = alarm ? KIND_ALARM : KIND_TIMER;
         startForeground(1, notification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+        updateSound();
         updateVibration();
     }
 

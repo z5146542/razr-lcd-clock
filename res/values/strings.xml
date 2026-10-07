@@ -9,6 +9,12 @@
     <string name="stop">Stop</string>
     <string name="snooze">Snooze</string>
     <string name="vibrate_ringing">Vibrate while it rings</string>
+    <string name="ring_sound">Sound: %1$s</string>
+    <string name="ring_silent">Silent</string>
+    <string name="ring_default">Default alarm sound</string>
+    <string name="ring_picker_timer">Timer sound</string>
+    <string name="ring_picker_alarm">Alarm sound</string>
+    <string name="ring_no_picker">This phone has no sound picker.</string>
     <string name="alarm_ringing">Alarm</string>
     <string name="panels_title">Clock face panels</string>
     <string name="panel_notices">Notifications</string>
