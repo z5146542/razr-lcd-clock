@@ -63,7 +63,8 @@ final class AlarmController {
         boolean ringing = state(context) == State.RINGING;
         setState(context, State.OFF);
         if (ringing) {
-            context.startService(new Intent(context, RingService.class).setAction(RingService.ACTION_STOP));
+            context.startService(new Intent(context, RingService.class).setAction(RingService.ACTION_STOP)
+                    .putExtra(RingService.EXTRA_KIND, RingService.KIND_ALARM));
         }
     }
 

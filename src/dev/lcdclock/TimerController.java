@@ -75,7 +75,8 @@ final class TimerController {
 
     /** Stops a ringing timer, through RingService. */
     static void stopRinging(Context context) {
-        context.startService(new Intent(context, RingService.class).setAction(RingService.ACTION_STOP));
+        context.startService(new Intent(context, RingService.class).setAction(RingService.ACTION_STOP)
+                .putExtra(RingService.EXTRA_KIND, RingService.KIND_TIMER));
     }
 
     /** Called by TimerReceiver when the alarm fires. */

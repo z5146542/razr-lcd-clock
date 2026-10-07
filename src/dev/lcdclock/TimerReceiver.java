@@ -15,7 +15,7 @@ public class TimerReceiver extends BroadcastReceiver {
         context.startForegroundService(new Intent(context, RingService.class)
                 .putExtra(RingService.EXTRA_KIND, RingService.KIND_TIMER));
         if (CoverScreen.isPhoneClosed(context)) {
-            CoverScreen.open(context);
+            CoverScreen.open(context, CoverActivity.PAGE_CLOCK);
         }
     }
 }

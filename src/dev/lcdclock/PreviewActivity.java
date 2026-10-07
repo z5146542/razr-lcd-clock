@@ -345,6 +345,17 @@ public class PreviewActivity extends Activity {
         TextView what = text(help, 13);
         what.setPadding(0, Math.round(8 * dp), 0, 0);
         card.addView(what);
+        if (CoverActivity.PAGE_CLOCK.equals(page) || CoverActivity.PAGE_ALARM.equals(page)) {
+            String kind = CoverActivity.PAGE_ALARM.equals(page) ? RingService.KIND_ALARM : RingService.KIND_TIMER;
+            Switch vibrate = new Switch(this);
+            vibrate.setText(R.string.vibrate_ringing);
+            vibrate.setTextColor(0xFFCCCCCC);
+            vibrate.setTextSize(14);
+            vibrate.setPadding(0, Math.round(8 * dp), 0, 0);
+            vibrate.setChecked(Prefs.vibrate(this, kind));
+            vibrate.setOnCheckedChangeListener((button, on) -> Prefs.setVibrate(this, kind, on));
+            card.addView(vibrate);
+        }
         if (CoverActivity.PAGE_RECORDER.equals(page)) {
             card.addView(flatButton(getString(R.string.recordings_open),
                     v -> startActivity(new Intent(this, RecordingsActivity.class))));

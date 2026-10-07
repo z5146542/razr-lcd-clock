@@ -77,6 +77,15 @@ final class Prefs {
     }
 
     /** Keep picture-in-picture video playing when the phone closes; see PipGuard. */
+    /** Vibrate while the timer ("timer") or the alarm ("alarm") rings; on unless switched off in the app. */
+    static boolean vibrate(Context context, String kind) {
+        return get(context).getBoolean("vibrate_" + kind, true);
+    }
+
+    static void setVibrate(Context context, String kind, boolean on) {
+        get(context).edit().putBoolean("vibrate_" + kind, on).apply();
+    }
+
     static boolean keepPip(Context context) {
         return get(context).getBoolean(KEEP_PIP, true);
     }

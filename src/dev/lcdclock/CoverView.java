@@ -19,7 +19,8 @@ import java.util.Map;
 /**
  * The cover-screen TIMER or ALARM page (one instance each), drawn in the clock face's LCD
  * style. The alarm is LCD Clock's own (AlarmController); tapping its bell turns it on or off.
- * Either page shows whatever is ringing. Laid out for the
+ * Each page shows its own ringing: ALARM flashes the alarm time with SNOOZE and STOP, TIMER
+ * flashes zero with STOP, and stopping one leaves the other ringing. Laid out for the
  * 368x194 outside screen; on any other shape it uses the largest box of that shape.
  */
 final class CoverView extends View {
@@ -111,8 +112,7 @@ final class CoverView extends View {
         Context context = getContext();
         int color = Prefs.color(context);
         TimerController.State timer = TimerController.state(context);
-        boolean alarmRinging = AlarmController.state(context) == AlarmController.State.RINGING;
-        boolean ringing = alarmRinging || timer == TimerController.State.RINGING;
+        boolean alarmRinging = alarmTab && AlarmController.state(context) == AlarmController.State.RINGING;
 
         // Largest 368:194 box, centred.
         float bw = getWidth();
@@ -136,7 +136,7 @@ final class CoverView extends View {
         if (alarmRinging) {
             drawAlarm(canvas, color, bx, bw, pad, midTop, midH, true);
             buttons(canvas, color, bx, bw, pad, btnTop, btnH, new int[] {SNOOZE, STOP});
-        } else if (alarmTab && !ringing) {
+        } else if (alarmTab) {
             drawAlarm(canvas, color, bx, bw, pad, midTop, midH, false);
             buttons(canvas, color, bx, bw, pad, btnTop, btnH, new int[] {MINUS, PLUS, SET});
         } else {
@@ -427,8 +427,9 @@ final class CoverView extends View {
                 TimerController.reset(context);
                 break;
             case STOP:
-                if (AlarmController.state(context) == AlarmController.State.RINGING) {
-                    context.startService(new Intent(context, RingService.class).setAction(RingService.ACTION_STOP));
+                if (alarmTab) {
+                    context.startService(new Intent(context, RingService.class).setAction(RingService.ACTION_STOP)
+                            .putExtra(RingService.EXTRA_KIND, RingService.KIND_ALARM));
                 } else {
                     TimerController.stopRinging(context);
                 }

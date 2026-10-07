@@ -24,9 +24,9 @@ import java.util.Map;
  * microphone with a red dot while recording, notes); HOME has the Home
  * Assistant app's icon (a house without it) and a player's MUSIC page its app's icon. The
  * current tab is lit (white, or the app icon at full strength) and underlined in the clock
- * colour. While an alarm or the timer rings the row says
- * ALARM or TIME UP instead; the ringing page's own buttons end it. Touches below the
- * row fall through to the page.
+ * colour. While an alarm or the timer rings, a flashing ALARM or TIME UP takes the clock's place
+ * (and the row shows on every page, the face too), the tabs still work, and the ringing page's
+ * own buttons end it. Touches below the row fall through to the page.
  */
 final class CoverTabs extends View {
     /** Menu text height, in box heights; pages lay their content out below this row. */
@@ -134,12 +134,17 @@ final class CoverTabs extends View {
             return;
         }
         seg.textStyle(SegmentPainter.seg14(), textH);
+        float clockLeft;
         if (CoverActivity.ringing(context)) {
             boolean alarm = AlarmController.state(context) == AlarmController.State.RINGING;
-            text(canvas, alarm ? "ALARM" : "TIME UP", left, base, textH, color);
-            return;
+            String label = alarm ? "ALARM" : "TIME UP";
+            clockLeft = right - seg.textWidth(label);
+            boolean lit = System.currentTimeMillis() / 400 % 2 == 0;
+            text(canvas, label, clockLeft, base, textH, lit ? color : SegmentPainter.dim(color));
+            postInvalidateDelayed(200);
+        } else {
+            clockLeft = drawClock(canvas, right, base, textH);
         }
-        float clockLeft = drawClock(canvas, right, base, textH);
 
         // Icons centred on the text's middle line; smaller only if there are too many to fit.
         int n = pages.size();

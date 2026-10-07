@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * The outside-screen pages: FACE (LCD Clock's own copy of the clock face, while it's the chosen
  * face and the app's setting allows) first, then in the order chosen in the app (Prefs.tabOrder),
- * leaving out hidden ones: TIMER (also when something rings), ALARM, CALENDAR,
+ * leaving out hidden ones: TIMER, ALARM, CALENDAR,
  * WEATHER, RECORDER, HOME with the Home Assistant buttons (only once set up) and a
  * MUSIC page per app with a media session, its tab showing the app's icon (opened by Media when
  * music plays; a plain MUSIC page when there's none). A hidden page asked for directly (a volume
@@ -31,6 +31,9 @@ import java.util.List;
  * does. There are no X buttons. Without FACE, swiping past the first or last page closes LCD Clock. The activity then stays on the cover across sleeps,
  * reset to FACE (or the playing app's MUSIC page), so it's already there when the screen wakes;
  * it closes as soon as the phone opens.
+ *
+ * <p>When the alarm or the timer rings, its page opens, and every wake goes back to it while it
+ * rings; the other pages stay a swipe or a tab away, and the screen stays on until it stops.
  */
 public class CoverActivity extends Activity {
     static final String EXTRA_PAGE = "page";
@@ -126,8 +129,23 @@ public class CoverActivity extends Activity {
         return Prefs.faceHome(context) && LcdSession.isFaceInUse();
     }
 
-    /** The page to wake to: RECORDER while recording, the playing app's MUSIC page, else our face; or null. */
+    /** ALARM or TIMER while one of them rings, otherwise null. */
+    static String ringingPage(Context context) {
+        if (AlarmController.state(context) == AlarmController.State.RINGING) {
+            return PAGE_ALARM;
+        }
+        return TimerController.state(context) == TimerController.State.RINGING ? PAGE_CLOCK : null;
+    }
+
+    /**
+     * The page to wake to: whatever is ringing, RECORDER while recording, the playing app's MUSIC
+     * page, else our face; or null.
+     */
     static String homePage(Context context) {
+        String ringing = ringingPage(context);
+        if (ringing != null) {
+            return ringing;
+        }
         if (RecorderService.isRecording()) {
             return PAGE_RECORDER;
         }
@@ -220,9 +238,6 @@ public class CoverActivity extends Activity {
     }
 
     private void swipe(int direction) {
-        if (ringing(this)) {
-            return; // the ringing page stays until it's stopped
-        }
         if (isPanel(page)) {
             open(PAGE_FACE, direction); // sideways off a panel: back to the face
             return;
@@ -230,6 +245,10 @@ public class CoverActivity extends Activity {
         List<String> pages = pages();
         int at = pages.indexOf(page);
         if (at < 0) {
+            // A page without a tab (hidden, but opened by a hold or a ring): on to either end.
+            if (!pages.isEmpty()) {
+                open(pages.get(direction > 0 ? 0 : pages.size() - 1), direction);
+            }
             return;
         }
         int next = at + direction;
@@ -317,7 +336,16 @@ public class CoverActivity extends Activity {
      * from apps, hence reflection.
      */
     private void applyTimeout() {
-        long timeout = ringing(this) ? Prefs.PHONE_TIMEOUT : Prefs.blackout(this, isMusic(page) ? PAGE_MUSIC : page);
+        boolean ringing = ringing(this);
+        // While ringing the screen stays on: turning off would also cancel the vibration.
+        frame.removeCallbacks(ringWatch);
+        if (ringing) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            frame.postDelayed(ringWatch, 1000);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+        long timeout = ringing ? Prefs.PHONE_TIMEOUT : Prefs.blackout(this, isMusic(page) ? PAGE_MUSIC : page);
         WindowManager.LayoutParams attrs = getWindow().getAttributes();
         try {
             WindowManager.LayoutParams.class.getField("userActivityTimeout").setLong(attrs, timeout);
@@ -327,6 +355,9 @@ public class CoverActivity extends Activity {
             Log.w(Binders.TAG, "can't set the screen timeout", e);
         }
     }
+
+    /** Puts the page's own timeout back once the ringing stops. */
+    private final Runnable ringWatch = this::applyTimeout;
 
     static boolean isShowing() {
         return showing;
@@ -344,10 +375,13 @@ public class CoverActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
+        String ringingPage = ringingPage(this);
         if (asleep) {
             asleep = false;
             String home = homePage(this);
             open(home != null ? home : PAGE_FACE, 0);
+        } else if (ringingPage != null && !ringingPage.equals(page)) {
+            open(ringingPage, 0); // woken while ringing: back to the ringing page
         }
     }
 
