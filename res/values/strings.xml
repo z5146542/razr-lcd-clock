@@ -15,6 +15,8 @@
     <string name="ring_picker_timer">Timer sound</string>
     <string name="ring_picker_alarm">Alarm sound</string>
     <string name="ring_no_picker">This phone has no sound picker.</string>
+    <string name="snooze_button">Snooze for: %1$s</string>
+    <string name="snooze_dialog_title">Snooze for</string>
     <string name="alarm_ringing">Alarm</string>
     <string name="panels_title">Clock face panels</string>
     <string name="panel_notices">Notifications</string>
@@ -118,7 +120,7 @@
     <string name="ha_title">Home Assistant</string>
     <string-array name="tab_help">
         <item>LCD Clock\'s own countdown timer: it keeps running with the screen off and rings on the outside screen.</item>
-        <item>A daily alarm: tap the bell to turn it on or off.</item>
+        <item>A daily alarm: tap the bell to turn it on or off. SNOOZE puts it off for the time chosen below; until it rings again the bell blinks, on the face too, and tapping the blinking bell cancels the snooze (the alarm stays on for tomorrow).</item>
         <item>Your events for the next 7 days.</item>
         <item>The forecast for your approximate location, from Open-Meteo.</item>
         <item>LCD Clock\'s own recorder: records even with the screen off and the phone locked, saving to Recordings. Playing and LIST (every recording in Recordings) need the phone unlocked.</item>

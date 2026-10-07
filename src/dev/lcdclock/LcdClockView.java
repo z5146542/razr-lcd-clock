@@ -213,7 +213,9 @@ final class LcdClockView extends View {
             Lock.drawBadge(canvas, columnX - Lock.badgeWidth(lockH) / 2, top + digitH * LOCK_Y - lockH / 2, lockH,
                     locked ? color : SegmentPainter.dim(color));
         }
-        seg.bell(canvas, columnX, top + digitH, digitH * BELL_H, alarmSet, color);
+        // Blinks with the colon while LCD Clock's alarm is snoozed.
+        boolean snoozed = AlarmController.state(getContext()) == AlarmController.State.SNOOZED;
+        seg.bell(canvas, columnX, top + digitH, digitH * BELL_H, alarmSet && (colonOn || !snoozed), color);
         if (!timeOnly) {
             drawInfo(canvas, left, left + rowW, top + digitH + gap + infoH, infoH, now);
         }

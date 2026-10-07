@@ -14,7 +14,6 @@ import java.util.Calendar;
 final class AlarmController {
     enum State { OFF, ON, RINGING, SNOOZED }
 
-    static final long SNOOZE_MS = 9 * 60_000;
     private static final String STATE = "alarm_state";
     private static final String HOUR = "alarm_hour";
     private static final String MINUTE = "alarm_minute";
@@ -41,12 +40,20 @@ final class AlarmController {
         return Prefs.get(context).getInt(MINUTE, 0);
     }
 
-    /** Changes the time; if the alarm is on, it moves straight away. */
+    /** Changes the time; if the alarm is on (or snoozed), tomorrow's moves straight away. */
     static void setTime(Context context, int hour, int minute) {
         Prefs.get(context).edit().putInt(HOUR, hour).putInt(MINUTE, minute).apply();
-        if (state(context) == State.ON) {
+        if (isOn(context)) {
             scheduleDaily(context);
         }
+    }
+
+    /**
+     * Whether an alarm bell is lit right now: always, except while snoozed, when every bell
+     * blinks, lit on even seconds as the face's colon is.
+     */
+    static boolean bellLit(Context context) {
+        return state(context) != State.SNOOZED || System.currentTimeMillis() / 1000 % 2 == 0;
     }
 
     static void turnOn(Context context) {
@@ -78,7 +85,7 @@ final class AlarmController {
         if (state(context) != State.RINGING) {
             return;
         }
-        long until = System.currentTimeMillis() + SNOOZE_MS;
+        long until = System.currentTimeMillis() + Prefs.snoozeMinutes(context) * 60_000L;
         Prefs.get(context).edit().putString(STATE, State.SNOOZED.name()).putLong(SNOOZE_UNTIL, until).apply();
         setAlarmClock(context, until, REQUEST_SNOOZE);
     }

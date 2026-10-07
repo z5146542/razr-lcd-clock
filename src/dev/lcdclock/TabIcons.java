@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * The cover pages' tab icons, for CoverTabs' menu row and the app's page list: segment-style
- * drawings for FACE (clock), TIMER (hourglass), ALARM (bell), CALENDAR, WEATHER (sun and cloud),
+ * drawings for FACE (clock), TIMER (hourglass), ALARM (bell, blinking while snoozed), CALENDAR, WEATHER (sun and cloud),
  * RECORDER (microphone, with a red dot while recording) and the plain MUSIC page (notes); the Home
  * Assistant app's icon for HOME; a player's app icon for its MUSIC page.
  */
@@ -86,7 +86,7 @@ final class TabIcons {
                 break;
             }
             case CoverActivity.PAGE_ALARM:
-                seg.bell(canvas, cx, cy + 0.42f * s, s * 0.9f, true, ink);
+                seg.bell(canvas, cx, cy + 0.42f * s, s * 0.9f, AlarmController.bellLit(context), ink);
                 return;
             case CoverActivity.PAGE_CALENDAR: { // a calendar sheet: frame, heading band, binding rings, dates
                 float l = cx - 0.4f * s;

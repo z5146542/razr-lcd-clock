@@ -102,6 +102,15 @@ final class Prefs {
         get(context).edit().putString("sound_" + kind, uri == null ? "" : uri.toString()).apply();
     }
 
+    /** How long SNOOZE puts the alarm off, in minutes; 9 unless changed in the app. */
+    static int snoozeMinutes(Context context) {
+        return get(context).getInt("snooze_minutes", 9);
+    }
+
+    static void setSnoozeMinutes(Context context, int minutes) {
+        get(context).edit().putInt("snooze_minutes", minutes).apply();
+    }
+
     static boolean keepPip(Context context) {
         return get(context).getBoolean(KEEP_PIP, true);
     }

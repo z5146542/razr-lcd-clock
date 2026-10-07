@@ -18,7 +18,8 @@ import java.util.Map;
 
 /**
  * The cover-screen TIMER or ALARM page (one instance each), drawn in the clock face's LCD
- * style. The alarm is LCD Clock's own (AlarmController); tapping its bell turns it on or off.
+ * style. The alarm is LCD Clock's own (AlarmController); tapping its bell turns it on or off, or
+ * while snoozed (the bell blinks) ends the snooze.
  * Each page shows its own ringing: ALARM flashes the alarm time with SNOOZE and STOP, TIMER
  * flashes zero with STOP, and stopping one leaves the other ringing. Laid out for the
  * 368x194 outside screen; on any other shape it uses the largest box of that shape.
@@ -241,7 +242,8 @@ final class CoverView extends View {
             String ampm = hour < 12 ? "AM" : "PM";
             seg.cell(canvas, SegmentPainter.ghost14(ampm), ampm, columnX, top + ampmH, color);
         }
-        seg.bell(canvas, columnX + bellH / 2, top + digitH, bellH, AlarmController.isOn(context), color);
+        seg.bell(canvas, columnX + bellH / 2, top + digitH, bellH,
+                AlarmController.isOn(context) && AlarmController.bellLit(context), color);
         if (!ringing) {
             underline(canvas, alarmField == 0 ? left : minuteX, (alarmField == 0 ? left : minuteX) + pairW, top,
                     digitH, color);
@@ -407,7 +409,9 @@ final class CoverView extends View {
                 }
                 break;
             case BELL:
-                if (AlarmController.isOn(context)) {
+                if (AlarmController.state(context) == AlarmController.State.SNOOZED) {
+                    AlarmController.stop(context); // ends the snooze; still on for tomorrow
+                } else if (AlarmController.isOn(context)) {
                     AlarmController.turnOff(context);
                 } else {
                     AlarmController.turnOn(context);

@@ -62,6 +62,8 @@ public class PreviewActivity extends Activity {
     /** Choices for a page's screen timeout, in ms; the phone's minimum is 8 s. */
     private static final long[] TIMEOUTS = {10_000, 15_000, 20_000, 30_000, 45_000, 60_000, 120_000,
             Prefs.PHONE_TIMEOUT};
+    /** Choices for how long the alarm's SNOOZE lasts, in minutes. */
+    private static final int[] SNOOZES = {1, 2, 3, 5, 9, 10, 15, 20, 30};
     private static final int CARD = 0xFF1C1C1E;
     private static final int OK = 0xFF5BD35B;
     private static final int TO_DO = 0xFFFFB000;
@@ -362,6 +364,12 @@ public class PreviewActivity extends Activity {
             Button sound = flatButton(getString(R.string.ring_sound, soundName(kind)), v -> pickSound(kind));
             soundButtons.put(kind, sound);
             card.addView(sound);
+            if (RingService.KIND_ALARM.equals(kind)) {
+                Button snooze = flatButton(getString(R.string.snooze_button,
+                        getString(R.string.minutes, Prefs.snoozeMinutes(this))), null);
+                snooze.setOnClickListener(v -> chooseSnooze(snooze));
+                card.addView(snooze);
+            }
         }
         if (CoverActivity.PAGE_RECORDER.equals(page)) {
             card.addView(flatButton(getString(R.string.recordings_open),
@@ -447,6 +455,26 @@ public class PreviewActivity extends Activity {
             }
             quickRows.addView(row);
         }
+    }
+
+    private void chooseSnooze(Button button) {
+        String[] labels = new String[SNOOZES.length];
+        int checked = -1;
+        for (int i = 0; i < SNOOZES.length; i++) {
+            labels[i] = getString(R.string.minutes, SNOOZES[i]);
+            if (SNOOZES[i] == Prefs.snoozeMinutes(this)) {
+                checked = i;
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.snooze_dialog_title)
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    Prefs.setSnoozeMinutes(this, SNOOZES[which]);
+                    button.setText(getString(R.string.snooze_button, labels[which]));
+                    dialog.dismiss();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     private void chooseTimeout(String page, String name, Button button) {
