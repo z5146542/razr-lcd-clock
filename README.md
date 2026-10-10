@@ -18,6 +18,19 @@ panels you swipe through on the outside screen with the phone closed.
 Unofficial, and not made by or affiliated with Motorola. It relies on Motorola's undocumented
 clock-face plugin interface, so a Motorola update could break it.
 
+> [!WARNING]
+> **Banking apps.** LCD Clock needs an accessibility service ("LCD Clock cover button"), and
+> banking apps treat an accessibility service in an app from outside Google Play as possible
+> malware. HSBC's apps flag the phone, and a bank may lock or deactivate your account over it.
+> LCD Clock switches the service off while the phone is open, but before you open a banking app:
+>
+> - **Check the cover button is off.** The cover button widget should show PAUSED or OFF, never a
+>   red ON, and the quick settings tile should say "Off till closed" or "Off". If it's on, tap the
+>   widget or the tile.
+> - **Don't play videos in apps like YouTube while you bank.** While a video plays, the service stays
+>   on so the video can keep playing when you close the phone. Stop the video first (the service
+>   goes off a few seconds later), or turn off "Keep playing when you close the phone" in the app.
+
 ## What it does
 
 - **Clock face "LCD Digits"**: thin seven-segment digits with the unlit segments showing faintly,
