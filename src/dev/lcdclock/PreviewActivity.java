@@ -257,7 +257,8 @@ public class PreviewActivity extends Activity {
         try {
             startActivity(new Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
                     .putExtra(Intent.EXTRA_COMPONENT_NAME, new ComponentName(this, ButtonService.class).flattenToString()));
-        } catch (ActivityNotFoundException e) {
+        } catch (ActivityNotFoundException | SecurityException e) {
+            // Android 15 keeps a service's own page for apps with OPEN_ACCESSIBILITY_DETAILS_SETTINGS.
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
         }
     }
