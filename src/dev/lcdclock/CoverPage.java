@@ -209,13 +209,18 @@ abstract class CoverPage extends View {
      * where the page starts, so they never take taps meant for the buttons below.
      */
     void panelHeader(Canvas canvas, String title, String action, int actionId) {
+        panelHeader(canvas, title, action, actionId, true);
+    }
+
+    /** As above; a disabled action is grey and not tappable. */
+    void panelHeader(Canvas canvas, String title, String action, int actionId, boolean enabled) {
         float textH = bh * CoverTabs.TAB_H;
         float base = by + pad + textH;
         label(canvas, title, bx + pad * 1.4f, base, textH, Color.WHITE);
         if (action != null) {
             float y = headerY();
             headerButton(canvas, actionId, action, "CLEAR".equals(action) ? CLEAR_RED : 0, bx + bw - pad * 1.2f, y,
-                    headerH(y), bx + bw);
+                    headerH(y), bx + bw, enabled);
         }
     }
 
@@ -237,23 +242,26 @@ abstract class CoverPage extends View {
     /**
      * A boxed button in a panel's top row, `h` tall from `y` with its right edge at `right`:
      * outlined like the other buttons, or filled with `fillColor` when it isn't 0. Taps count from a
-     * little left of it to `touchRight`, down to where the page starts. Returns its left edge.
+     * little left of it to `touchRight`, down to where the page starts. Disabled, it's an outlined
+     * grey button that takes no taps. Returns its left edge.
      */
     private float headerButton(Canvas canvas, int id, String label, int fillColor, float right, float y, float h,
-            float touchRight) {
+            float touchRight, boolean enabled) {
         float glyphH = h * 0.5f;
         seg.textStyle(SegmentPainter.seg14(), glyphH);
         float labelW = seg.textWidth(SegmentPainter.ghost14(label));
         RectF r = new RectF(right - (label.length() == 1 ? h * 1.15f : labelW + h * 0.84f), y, right, y + h);
-        if (fillColor != 0) {
+        if (fillColor != 0 && enabled) {
             float radius = r.height() * 0.28f;
             fill.setColor(pressed == id ? SegmentPainter.dim(fillColor) : fillColor);
             canvas.drawRoundRect(r, radius, radius, fill);
         } else {
-            button(canvas, id, r, false, true, Prefs.color(getContext()));
+            button(canvas, id, r, false, enabled, Prefs.color(getContext()));
         }
-        label(canvas, label, r.centerX() - labelW / 2, r.centerY() + glyphH / 2, glyphH, Color.WHITE);
-        hits.put(id, new RectF(r.left - pad * 0.4f, by, touchRight, top));
+        label(canvas, label, r.centerX() - labelW / 2, r.centerY() + glyphH / 2, glyphH, enabled ? Color.WHITE : GREY);
+        if (enabled) {
+            hits.put(id, new RectF(r.left - pad * 0.4f, by, touchRight, top));
+        }
         return r.left;
     }
 

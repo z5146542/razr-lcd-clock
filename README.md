@@ -33,7 +33,7 @@ clock-face plugin interface, so a Motorola update could break it.
   - **MUSIC**: one tab per app that's playing.
 - **Panels**:
   - **Notifications** (swipe up): tap one to read all of it. Contents stay hidden while the phone
-    is locked.
+    is locked, and × and CLEAR are greyed out until it's unlocked.
   - **Quick controls** (swipe down): flashlight, SOS, Do Not Disturb, ring mode, media volume,
     battery saver, Night Light, Bedtime, Home Assistant buttons and a WireGuard VPN (through WG
     Tunnel).

@@ -28,7 +28,8 @@ import java.util.Set;
  * drag to read on; BACK or a drag down from the top returns to the list. CLEAR dismisses everything;
  * a drag down from the top, or a sideways swipe, goes back to the face. Notices decides
  * what may be shown while the phone is locked; a padlock after the title says it's locked, and
- * tapping it asks to unlock (so the fingerprint sensor listens).
+ * tapping it asks to unlock (so the fingerprint sensor listens). While locked, × and CLEAR are grey
+ * and dismiss nothing.
  */
 final class NotificationsView extends CoverPage {
     private static final int CLEAR = 2;
@@ -155,7 +156,8 @@ final class NotificationsView extends CoverPage {
         for (Notices.Item item : items) {
             anyClearable |= item.clearable;
         }
-        panelHeader(canvas, "NOTIFICATIONS", anyClearable ? "CLEAR" : null, CLEAR);
+        boolean locked = Lock.locked(context);
+        panelHeader(canvas, "NOTIFICATIONS", anyClearable ? "CLEAR" : null, CLEAR, !locked);
         float textH = bh * CoverTabs.TAB_H;
         seg.textStyle(SegmentPainter.seg14(), textH);
         lockBadge(canvas, bx + pad * 1.4f + seg.textWidth(SegmentPainter.ghost14("NOTIFICATIONS")) + textH * 0.7f, color);
@@ -245,14 +247,8 @@ final class NotificationsView extends CoverPage {
             scrolling |= marquee(canvas, body, textX, rowTop + rowH * 0.84f, rowH * 0.29f, textRight - textX, GREY);
 
             if (clearable) {
-                RectF r = new RectF(right - dismissS, cy - dismissS / 2, right, cy + dismissS / 2);
-                button(canvas, DISMISS + i, r, false, true, color);
-                float x = dismissS * 0.18f;
-                path.reset();
-                SegmentPainter.bar(path, r.centerX() - x, r.centerY() - x, r.centerX() + x, r.centerY() + x, dismissS * 0.08f);
-                SegmentPainter.bar(path, r.centerX() + x, r.centerY() - x, r.centerX() - x, r.centerY() + x, dismissS * 0.08f);
-                fill.setColor(Color.WHITE);
-                canvas.drawPath(path, fill);
+                dismissButton(canvas, DISMISS + i,
+                        new RectF(right - dismissS, cy - dismissS / 2, right, cy + dismissS / 2), locked, color);
             }
             hits.put(ROW + i, rowRect); // after ×, so × wins where they overlap
         }
@@ -310,14 +306,9 @@ final class NotificationsView extends CoverPage {
         line(canvas, item.sub.isEmpty() ? item.app : item.app + " · " + item.sub, appX, base, metaH,
                 metaRight - whenW - pad - appX, GREY);
         if (item.clearable) {
-            RectF r = new RectF(right - dismissS, y + (appRowH - dismissS) / 2, right, y + (appRowH + dismissS) / 2);
-            button(canvas, DETAIL_DISMISS, r, false, true, color);
-            float x = dismissS * 0.18f;
-            path.reset();
-            SegmentPainter.bar(path, r.centerX() - x, r.centerY() - x, r.centerX() + x, r.centerY() + x, dismissS * 0.08f);
-            SegmentPainter.bar(path, r.centerX() + x, r.centerY() - x, r.centerX() - x, r.centerY() + x, dismissS * 0.08f);
-            fill.setColor(Color.WHITE);
-            canvas.drawPath(path, fill);
+            dismissButton(canvas, DETAIL_DISMISS,
+                    new RectF(right - dismissS, y + (appRowH - dismissS) / 2, right, y + (appRowH + dismissS) / 2),
+                    Lock.locked(context), color);
         }
         y += appRowH + pad;
         canvas.translate(left, y);
@@ -328,6 +319,24 @@ final class NotificationsView extends CoverPage {
         }
         canvas.restore();
         scrollBar(canvas, top, bottom, contentH, color);
+    }
+
+    /**
+     * An × in square `r`. While locked it's grey and does nothing, but still takes its taps, so they
+     * don't open the row underneath.
+     */
+    private void dismissButton(Canvas canvas, int id, RectF r, boolean locked, int color) {
+        button(canvas, id, r, false, !locked, color);
+        if (locked) {
+            hits.put(id, r);
+        }
+        float s = r.height();
+        float x = s * 0.18f;
+        path.reset();
+        SegmentPainter.bar(path, r.centerX() - x, r.centerY() - x, r.centerX() + x, r.centerY() + x, s * 0.08f);
+        SegmentPainter.bar(path, r.centerX() + x, r.centerY() - x, r.centerX() - x, r.centerY() + x, s * 0.08f);
+        fill.setColor(locked ? GREY : Color.WHITE);
+        canvas.drawPath(path, fill);
     }
 
     private static StaticLayout wrap(CharSequence s, TextPaint paint, float width) {
@@ -413,6 +422,10 @@ final class NotificationsView extends CoverPage {
 
     @Override
     boolean perform(int id) {
+        // Grey while locked; checked again here in case it locked since the panel was drawn.
+        if ((id == CLEAR || id == DETAIL_DISMISS || (id >= DISMISS && id < ROW)) && Lock.locked(getContext())) {
+            return false;
+        }
         if (id == CLEAR) {
             Notices.clearAll(getContext());
             return true;

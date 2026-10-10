@@ -13,8 +13,8 @@ import android.util.Log;
 
 /**
  * The phone's lock, for what the outside screen keeps back until it's unlocked: notification
- * contents (Notices), and the Home Assistant and VPN switches (HOME and the quick controls), which
- * refuse while locked whichever page taps them. The fingerprint unlocks the phone while it's
+ * contents (Notices) and dismissing them (NotificationsView), and the Home Assistant and VPN
+ * switches (HOME and the quick controls), which refuse while locked whichever page taps them. The fingerprint unlocks the phone while it's
  * closed; the pages showing these check again at least every second, so they open up straight away.
  *
  * <p>While an LCD Clock page covers the lock screen, Android stops listening to the fingerprint
