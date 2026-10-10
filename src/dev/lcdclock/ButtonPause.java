@@ -27,7 +27,7 @@ import java.util.List;
  * on, the service stays on while an app that can go into picture-in-picture is playing. Only a
  * service this switched off comes back (Prefs.BUTTON_PAUSED), so switching it off in Android's
  * settings keeps it off; switching it on there with the phone open leaves it on until the phone
- * next opens.
+ * next opens. ButtonTile and ButtonWidget show where it stands and switch it by hand (toggle).
  */
 final class ButtonPause {
     /** After playback stops with the phone open, how long before the service goes off: pauses and skips are brief. */
@@ -152,9 +152,26 @@ final class ButtonPause {
         return Media.allowed(context) && QuickControls.canWriteSecure(context);
     }
 
-    /** For MediaListener's dump (install.sh): "on", "paused" or "off". */
+    /** For MediaListener's dump (install.sh), ButtonTile and ButtonWidget: "on", "paused" or "off". */
     static String state(Context context) {
         return isOn(context) ? "on" : paused(context) ? "paused" : "off";
+    }
+
+    /**
+     * ButtonTile's and ButtonWidget's tap. On: off now, as when the phone opens, so back on when
+     * it closes (or a video starts playing). Paused or off: on now, until the phone next opens.
+     * False if this can't switch it (manages).
+     */
+    static boolean toggle(Context context) {
+        if (!manages(context)) {
+            return false;
+        }
+        if (isOn(context)) {
+            pause(context);
+        } else if (write(context, true)) {
+            Log.d(Binders.TAG, "cover button: switched on by hand");
+        }
+        return true;
     }
 
     private static void pause(Context context) {

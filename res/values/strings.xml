@@ -78,6 +78,17 @@
     <string name="widget_description">The outside screen\'s clock face on your home screen</string>
     <string name="time_widget_name">LCD Clock time</string>
     <string name="time_widget_description">Just the time from the outside screen\'s clock face</string>
+    <string name="button_widget_name">LCD Clock cover button</string>
+    <string name="button_widget_description">Whether the cover button (accessibility) is on, and a tap to switch it</string>
+    <string name="button_widget_on">Cover button on.</string>
+    <string name="button_widget_paused">Cover button off until the phone closes.</string>
+    <string name="button_widget_off">Cover button off.</string>
+    <string name="button_widget_tap">Tap to switch it.</string>
+    <string name="button_widget_setup">Tap to open LCD Clock\'s setup.</string>
+    <string name="tile_label">Cover button</string>
+    <string name="tile_on">On</string>
+    <string name="tile_paused">Off till closed</string>
+    <string name="tile_off">Off</string>
     <string name="quick_home">Home Assistant: %1$s</string>
     <string name="quick_not_set_up">%1$s (not set up)</string>
     <string name="wg_title">WireGuard</string>

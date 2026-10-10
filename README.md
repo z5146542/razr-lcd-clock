@@ -41,6 +41,9 @@ clock-face plugin interface, so a Motorola update could break it.
 - **Volume-button holds**: with the phone closed, holding volume up or down opens a page of your
   choice, or toggles the flashlight.
 - **Home screen widgets**: the face, or just the time.
+- **Cover button switch**: a home screen widget and a quick settings tile show whether the
+  accessibility switch is on, off until the phone closes, or off. A tap switches it off until the
+  phone closes, or back on. Use it before banking while a video is playing.
 - **Picture-in-picture**: video keeps playing when you close the phone. The razr would otherwise
   close the picture-in-picture window and stop the video. For this, the accessibility switch stays
   on with the phone open while a video app is playing, so a banking app opened then may object.

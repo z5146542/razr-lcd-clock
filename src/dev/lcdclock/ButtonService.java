@@ -104,16 +104,18 @@ public class ButtonService extends AccessibilityService {
         ClockWidget.start(this);
         PipGuard.start(this);
         Prefs.dropFossify(this);
+        ButtonWidget.update(this);
     }
 
     @Override
     public boolean onUnbind(Intent intent) {
-        CoverHome.stop();
         running = false;
+        CoverHome.stop();
         if (MediaListener.connected == null) {
             ClockWidget.stop();
         }
         PipGuard.stop();
+        ButtonWidget.update(this);
         return super.onUnbind(intent);
     }
 
