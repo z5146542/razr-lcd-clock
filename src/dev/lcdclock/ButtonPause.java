@@ -3,6 +3,10 @@ package dev.lcdclock;
 import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
@@ -18,10 +22,14 @@ import java.util.List;
  * Banking apps (HSBC, CommBank) refuse to run, or flag the account, while an app that didn't come
  * from Google Play has an accessibility service on, and the service's work is for the closed
  * phone: the cover pages on wake and the volume holds. So this takes it out of Android's enabled
- * accessibility services when the phone opens and puts it back when it closes (closed as
- * CoverScreen.isPhoneClosed has it: the inner screen off), through "write secure settings"
- * (granted over adb: QuickControls.canWriteSecure). MediaListener runs it, as Android keeps
- * notification access running throughout.
+ * accessibility services when the phone opens and puts it back when it closes, through "write
+ * secure settings" (granted over adb: QuickControls.canWriteSecure). MediaListener runs it, as
+ * Android keeps notification access running throughout.
+ *
+ * <p>Closed is by the hinge, not the inner screen being off (CoverScreen.isPhoneClosed): locking
+ * the open phone turns that screen off too, and a banking app left open (HSBC's ThreatMetrix)
+ * notices the service coming back. The inner screen stands in only until the hinge has reported,
+ * or on a phone without a hinge sensor.
  *
  * <p>The exception is PipGuard, which has to be watching as the phone closes: with "keep playing"
  * on, the service stays on while an app that can go into picture-in-picture is playing. Only a
@@ -32,6 +40,12 @@ import java.util.List;
 final class ButtonPause {
     /** After playback stops with the phone open, how long before the service goes off: pauses and skips are brief. */
     private static final long PLAYBACK_GRACE_MS = 5000;
+    /**
+     * Hinge angles: below CLOSED_DEG the phone is shut (Motorola commits "folded" at ~15°), above
+     * OPEN_DEG open again; in between it stays as it was.
+     */
+    private static final float CLOSED_DEG = 15;
+    private static final float OPEN_DEG = 30;
 
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static Context app;
@@ -39,9 +53,29 @@ final class ButtonPause {
     private static Boolean wanted;
     private static boolean wasClosed;
     private static boolean pausePending;
+    /** Shut, by the hinge; null before its first reading. */
+    private static Boolean folded;
 
     private ButtonPause() {
     }
+
+    private static final SensorEventListener hinge = new SensorEventListener() {
+        @Override
+        public void onSensorChanged(SensorEvent event) {
+            float angle = event.values[0];
+            boolean now = angle < CLOSED_DEG || (angle <= OPEN_DEG
+                    && (folded != null ? folded : angle < (CLOSED_DEG + OPEN_DEG) / 2));
+            if (folded == null || folded != now) {
+                folded = now;
+                Log.d(Binders.TAG, "cover button: hinge at " + Math.round(angle) + "°, " + (now ? "closed" : "open"));
+                update();
+            }
+        }
+
+        @Override
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
+    };
 
     private static final DisplayManager.DisplayListener innerScreen = new DisplayManager.DisplayListener() {
         @Override
@@ -65,7 +99,7 @@ final class ButtonPause {
     /** Playback stopped a while ago with the phone open: off now, unless that's changed. */
     private static final Runnable pauseLater = () -> {
         pausePending = false;
-        if (app != null && !CoverScreen.isPhoneClosed(app) && !pipPlaying(app)) {
+        if (app != null && !wantOn(app)) {
             pause(app);
             wanted = false;
         }
@@ -78,7 +112,20 @@ final class ButtonPause {
         }
         app = context.getApplicationContext();
         wanted = null;
+        folded = null;
+        // The inner screen, for until the hinge reports (and without one).
         app.getSystemService(DisplayManager.class).registerDisplayListener(innerScreen, main);
+        SensorManager sensors = app.getSystemService(SensorManager.class);
+        Sensor sensor = sensors.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE, true); // closing while asleep wakes it
+        if (sensor == null) {
+            sensor = sensors.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE);
+        }
+        if (sensor == null) {
+            Log.w(Binders.TAG, "cover button: no hinge angle sensor, going by the inner screen");
+        } else {
+            // On-change: it reports once on registering, then only while the hinge moves.
+            sensors.registerListener(hinge, sensor, SensorManager.SENSOR_DELAY_NORMAL, main);
+        }
         Media.listen(mediaChanged);
         update();
     }
@@ -89,6 +136,8 @@ final class ButtonPause {
             return;
         }
         app.getSystemService(DisplayManager.class).unregisterDisplayListener(innerScreen);
+        app.getSystemService(SensorManager.class).unregisterListener(hinge);
+        folded = null;
         Media.unlisten(mediaChanged);
         main.removeCallbacks(pauseLater);
         pausePending = false;
@@ -101,8 +150,8 @@ final class ButtonPause {
         if (app == null) {
             return;
         }
-        boolean closed = CoverScreen.isPhoneClosed(app);
-        boolean want = closed || pipPlaying(app);
+        boolean closed = closed(app);
+        boolean want = wantOn(app);
         boolean opened = !closed && wasClosed;
         wasClosed = closed;
         if (want) {
@@ -122,6 +171,16 @@ final class ButtonPause {
             pausePending = true;
             main.postDelayed(pauseLater, PLAYBACK_GRACE_MS);
         }
+    }
+
+    /** Shut, by the hinge; by the inner screen being off until the hinge has reported. */
+    private static boolean closed(Context context) {
+        return folded != null ? folded : CoverScreen.isPhoneClosed(context);
+    }
+
+    /** Closed, or PipGuard needs it. */
+    private static boolean wantOn(Context context) {
+        return closed(context) || pipPlaying(context);
     }
 
     /** An app that can go into picture-in-picture is playing, and PipGuard is to keep it going. */

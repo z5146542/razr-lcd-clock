@@ -148,7 +148,8 @@ The SDK is looked for at `$ANDROID_HOME`, then `~/Android/Sdk`, then `~/Library/
   volume holds.
 - **Accessibility only while closed**: `ButtonPause` takes `ButtonService` out of the enabled
   accessibility services when the phone opens and puts it back when it closes, using the "write
-  secure settings" permission `install.sh` grants. With "keep playing" on, it stays on while a
+  secure settings" permission `install.sh` grants. It goes by the hinge angle, so locking the open
+  phone doesn't count as closing it. With "keep playing" on, it stays on while a
   picture-in-picture-capable app plays, for `PipGuard`.
 - **Music and notifications**: these come through a notification listener (`MediaListener`), which
   Android keeps running, so it also runs `ButtonPause`.
