@@ -27,9 +27,10 @@ clock-face plugin interface, so a Motorola update could break it.
 > - **Check the cover button is off.** The cover button widget should show PAUSED or OFF, never a
 >   red ON, and the quick settings tile should say "Off till closed" or "Off". If it's on, tap the
 >   widget or the tile.
-> - **Don't play videos in apps like YouTube while you bank.** While a video plays, the service stays
->   on so the video can keep playing when you close the phone. Stop the video first (the service
->   goes off a few seconds later), or turn off "Keep playing when you close the phone" in the app.
+> - **Don't open a banking app while a video plays in apps like YouTube.** A video that's already
+>   playing keeps the service on so it can keep playing when you close the phone. Stop the video
+>   first (the service goes off a few seconds later), or turn off "Keep playing when you close the
+>   phone" in the app. A video started while a banking app is still running doesn't switch it on.
 > - **Check your banking apps are on LCD Clock's Banking apps list.** If you close the phone while
 >   one of them is still running, even from Recents, the service stays off until you next open the
 >   phone, because the banking app would notice it coming on. The cover pages and volume holds wait
@@ -65,7 +66,8 @@ clock-face plugin interface, so a Motorola update could break it.
 - **Picture-in-picture**: video keeps playing when you close the phone. The razr would otherwise
   close the picture-in-picture window and stop the video. For this, the accessibility switch stays
   on with the phone open while a video app is playing, so a banking app opened then may object.
-  Turn "Keep playing when you close the phone" off if that matters.
+  Turn "Keep playing when you close the phone" off if that matters. A video started while a banking
+  app is still running doesn't switch it on.
 
 Everything is set up in the LCD Clock app on the inside screen. Its **Setup** list shows what's
 still missing.

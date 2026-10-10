@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.hardware.display.DisplayManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Display;
@@ -33,7 +34,8 @@ import java.util.List;
  * is still running, even from Recents (BankApps), leaves the service off until the phone next opens.
  *
  * <p>The exception is PipGuard, which has to be watching as the phone closes: with "keep playing"
- * on, the service stays on while an app that can go into picture-in-picture is playing. Only a
+ * on, the service stays on while an app that can go into picture-in-picture is playing, unless a
+ * banking app is running (a video started with one in Recents doesn't switch it on). Only a
  * service this switched off comes back (Prefs.BUTTON_PAUSED), so switching it off in Android's
  * settings keeps it off; switching it on there with the phone open leaves it on until the phone
  * next opens. ButtonTile and ButtonWidget show where it stands and switch it by hand (toggle).
@@ -41,6 +43,8 @@ import java.util.List;
 final class ButtonPause {
     /** After playback stops with the phone open, how long before the service goes off: pauses and skips are brief. */
     private static final long PLAYBACK_GRACE_MS = 5000;
+    /** How long a BankApps.running answer holds for PipGuard's exception: playback changes come often. */
+    private static final long BANK_CHECK_MS = 10_000;
     /**
      * Hinge angles: below CLOSED_DEG the phone is shut (Motorola commits "folded" at ~15°), above
      * OPEN_DEG open again; in between it stays as it was.
@@ -58,6 +62,9 @@ final class ButtonPause {
     private static Boolean folded;
     /** The phone was shut with a banking app still running (BankApps): off until it next opens. */
     private static boolean closedWithBank;
+    /** The banking app found running for PipGuard's exception, or null; and when that was checked. */
+    private static String bankForPip;
+    private static long bankCheckedAt = -BANK_CHECK_MS;
 
     private ButtonPause() {
     }
@@ -185,9 +192,26 @@ final class ButtonPause {
         return folded != null ? folded : CoverScreen.isPhoneClosed(context);
     }
 
-    /** Closed (with no banking app running), or PipGuard needs it. */
+    /** Closed with no banking app running; open, PipGuard needing it and no banking app running. */
     private static boolean wantOn(Context context) {
-        return (closed(context) && !closedWithBank) || pipPlaying(context);
+        if (closed(context)) {
+            return !closedWithBank;
+        }
+        return pipPlaying(context) && bankForPip(context) == null;
+    }
+
+    /** A banking app running while a video plays with the phone open (BankApps), checked at most every BANK_CHECK_MS. */
+    private static String bankForPip(Context context) {
+        long now = SystemClock.elapsedRealtime();
+        if (now - bankCheckedAt >= BANK_CHECK_MS) {
+            bankCheckedAt = now;
+            String bank = BankApps.running(context, System.currentTimeMillis());
+            if (bank != null && !bank.equals(bankForPip)) {
+                Log.d(Binders.TAG, "cover button: video playing but " + bank + " running, staying off");
+            }
+            bankForPip = bank;
+        }
+        return bankForPip;
     }
 
     /** An app that can go into picture-in-picture is playing, and PipGuard is to keep it going. */
