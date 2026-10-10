@@ -25,6 +25,8 @@ final class Prefs {
     static final String KEEP_PIP = "keep_pip";
     /** ButtonPause switched ButtonService off while the phone is open, and will switch it back on. */
     static final String BUTTON_PAUSED = "button_paused";
+    /** The banking apps' packages, comma-separated, once picked (BankApps). */
+    static final String BANK_APPS = "bank_apps";
     static final String LAST_RECORDING = "last_recording";
     static final String LAST_RECORDING_MS = "last_recording_ms";
     static final String TAB_ORDER = "tab_order";

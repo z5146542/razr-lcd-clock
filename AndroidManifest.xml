@@ -39,6 +39,12 @@
         <package android:name="io.homeassistant.companion.android" />
     </queries>
 
+    <!-- Whether a banking app is still running as the phone closes, so the cover button stays off
+         (BankApps): usage access for when it was used, DUMP for when its process died. install.sh
+         allows both over adb. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.DUMP" />
+
     <!-- Re-arm the alarm after a reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 

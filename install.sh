@@ -103,13 +103,17 @@ if [ "$fresh" = 0 ] && phone dumpsys appwidget | has "cmp:ComponentInfo\{$PKG/";
 fi
 
 say "Granting permissions"
-# Runtime permissions (recorder, calendar, weather, notifications, other apps' recordings), and
-# WRITE_SECURE_SETTINGS for the battery saver and Night Light quick controls.
+# Runtime permissions (recorder, calendar, weather, notifications, other apps' recordings),
+# WRITE_SECURE_SETTINGS for the battery saver and Night Light quick controls and for switching the
+# cover button, and DUMP for seeing when a banking app's process has died (BankApps).
 for permission in POST_NOTIFICATIONS RECORD_AUDIO READ_CALENDAR ACCESS_COARSE_LOCATION READ_MEDIA_AUDIO \
-    WRITE_SECURE_SETTINGS; do
+    WRITE_SECURE_SETTINGS DUMP; do
     adb shell pm grant "$PKG" "android.permission.$permission" >/dev/null 2>&1 \
         || echo "  couldn't grant $permission: allow it from the app's Setup list"
 done
+# Usage access, so closing the phone on a banking app keeps the cover button off (BankApps).
+adb shell appops set "$PKG" GET_USAGE_STATS allow >/dev/null 2>&1 \
+    || echo "  couldn't allow usage access: allow it from the app's Banking apps card"
 
 # The rest are switches Android leaves to you, on the inside screen.
 missing=()

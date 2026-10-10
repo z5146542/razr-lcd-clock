@@ -30,6 +30,11 @@ clock-face plugin interface, so a Motorola update could break it.
 > - **Don't play videos in apps like YouTube while you bank.** While a video plays, the service stays
 >   on so the video can keep playing when you close the phone. Stop the video first (the service
 >   goes off a few seconds later), or turn off "Keep playing when you close the phone" in the app.
+> - **Check your banking apps are on LCD Clock's Banking apps list.** If you close the phone while
+>   one of them is still running, even from Recents, the service stays off until you next open the
+>   phone, because the banking app would notice it coming on. The cover pages and volume holds wait
+>   until then too. Swipe the banking app away from Recents when you've finished to have them back.
+>   Until you pick, the list is every app whose package name looks like a bank's.
 
 ## What it does
 
@@ -83,7 +88,9 @@ Connect the phone and run:
 ```
 
 It builds the APK, installs it and grants the permissions adb can grant: microphone, calendar,
-location, notifications, audio files, and secure settings for the saver and Night Light controls.
+location, notifications, audio files, secure settings (for the saver and Night Light controls, and
+for switching the cover button), and usage access and `DUMP` (to see whether a banking app is still
+running).
 
 Then it opens the screens for the switches Android leaves to you, and waits while you turn each on:
 
@@ -150,7 +157,10 @@ The SDK is looked for at `$ANDROID_HOME`, then `~/Android/Sdk`, then `~/Library/
   accessibility services when the phone opens and puts it back when it closes, using the "write
   secure settings" permission `install.sh` grants. It goes by the hinge angle, so locking the open
   phone doesn't count as closing it. With "keep playing" on, it stays on while a
-  picture-in-picture-capable app plays, for `PipGuard`.
+  picture-in-picture-capable app plays, for `PipGuard`. If a banking app (`BankApps`) is still
+  running as the phone closes, it stays off. Running means used since its process last died: usage
+  access says when it was used, and process exit records (the `DUMP` permission) say when it died.
+  `install.sh` grants both.
 - **Music and notifications**: these come through a notification listener (`MediaListener`), which
   Android keeps running, so it also runs `ButtonPause`.
 

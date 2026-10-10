@@ -29,7 +29,8 @@ import java.util.List;
  * <p>Closed is by the hinge, not the inner screen being off (CoverScreen.isPhoneClosed): locking
  * the open phone turns that screen off too, and a banking app left open (HSBC's ThreatMetrix)
  * notices the service coming back. The inner screen stands in only until the hinge has reported,
- * or on a phone without a hinge sensor.
+ * or on a phone without a hinge sensor. For the same reason, closing the phone while a banking app
+ * is still running, even from Recents (BankApps), leaves the service off until the phone next opens.
  *
  * <p>The exception is PipGuard, which has to be watching as the phone closes: with "keep playing"
  * on, the service stays on while an app that can go into picture-in-picture is playing. Only a
@@ -55,6 +56,8 @@ final class ButtonPause {
     private static boolean pausePending;
     /** Shut, by the hinge; null before its first reading. */
     private static Boolean folded;
+    /** The phone was shut with a banking app still running (BankApps): off until it next opens. */
+    private static boolean closedWithBank;
 
     private ButtonPause() {
     }
@@ -67,7 +70,10 @@ final class ButtonPause {
                     && (folded != null ? folded : angle < (CLOSED_DEG + OPEN_DEG) / 2));
             if (folded == null || folded != now) {
                 folded = now;
-                Log.d(Binders.TAG, "cover button: hinge at " + Math.round(angle) + "°, " + (now ? "closed" : "open"));
+                String bank = now ? BankApps.running(app, System.currentTimeMillis()) : null;
+                closedWithBank = bank != null;
+                Log.d(Binders.TAG, "cover button: hinge at " + Math.round(angle) + "°, " + (now ? "closed" : "open")
+                        + (bank != null ? " with " + bank + " running, staying off" : ""));
                 update();
             }
         }
@@ -113,6 +119,7 @@ final class ButtonPause {
         app = context.getApplicationContext();
         wanted = null;
         folded = null;
+        closedWithBank = false;
         // The inner screen, for until the hinge reports (and without one).
         app.getSystemService(DisplayManager.class).registerDisplayListener(innerScreen, main);
         SensorManager sensors = app.getSystemService(SensorManager.class);
@@ -178,9 +185,9 @@ final class ButtonPause {
         return folded != null ? folded : CoverScreen.isPhoneClosed(context);
     }
 
-    /** Closed, or PipGuard needs it. */
+    /** Closed (with no banking app running), or PipGuard needs it. */
     private static boolean wantOn(Context context) {
-        return closed(context) || pipPlaying(context);
+        return (closed(context) && !closedWithBank) || pipPlaying(context);
     }
 
     /** An app that can go into picture-in-picture is playing, and PipGuard is to keep it going. */

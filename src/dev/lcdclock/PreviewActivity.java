@@ -57,6 +57,7 @@ public class PreviewActivity extends Activity {
     private final LinearLayout[] slotActions = new LinearLayout[HomeAssistant.SLOTS];
     private final TextView[] slotEntities = new TextView[HomeAssistant.SLOTS];
     private LinearLayout setupCard;
+    private LinearLayout bankCard;
     private LinearLayout pageCards;
     private LinearLayout quickRows;
     /** Choices for a page's screen timeout, in ms; the phone's minimum is 8 s. */
@@ -189,6 +190,10 @@ public class PreviewActivity extends Activity {
         pipHelp.setPadding(0, Math.round(8 * dp), 0, 0);
         pip.addView(pipHelp);
 
+        // Banking apps: closing the phone on one keeps the cover button off (BankApps; filled in onResume).
+        column.addView(header(R.string.banks_title));
+        bankCard = card(column);
+
         // HOME's three buttons.
         column.addView(header(R.string.ha_title));
         LinearLayout ha = card(column);
@@ -262,6 +267,60 @@ public class PreviewActivity extends Activity {
         } catch (ActivityNotFoundException | SecurityException e) {
             // Android 15 keeps a service's own page for apps with OPEN_ACCESSIBILITY_DETAILS_SETTINGS.
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+        }
+    }
+
+    // ---- banking apps ----
+
+    private void refreshBanks() {
+        bankCard.removeAllViews();
+        bankCard.addView(text(getString(R.string.banks_help), 14));
+        bankCard.addView(flatButton(getString(R.string.banks_choose, BankApps.chosen(this).size()), v -> chooseBanks()));
+        if (!BankApps.usageAccess(this)) {
+            TextView needed = text(getString(R.string.banks_usage_needed), 13);
+            needed.setTextColor(TO_DO);
+            bankCard.addView(needed);
+            bankCard.addView(flatButton(getString(R.string.allow), v -> openUsageAccess()));
+        } else if (!BankApps.canSeeExits(this)) {
+            TextView needed = text(getString(R.string.banks_dump_needed), 13);
+            needed.setTextColor(TO_DO);
+            needed.setTextIsSelectable(true);
+            bankCard.addView(needed);
+        }
+    }
+
+    private void chooseBanks() {
+        List<String[]> apps = BankApps.launchable(this);
+        java.util.Set<String> chosen = BankApps.chosen(this);
+        String[] labels = new String[apps.size()];
+        boolean[] checked = new boolean[apps.size()];
+        for (int i = 0; i < apps.size(); i++) {
+            labels[i] = apps.get(i)[1];
+            checked[i] = chosen.contains(apps.get(i)[0]);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.banks_title)
+                .setMultiChoiceItems(labels, checked, (dialog, which, on) -> checked[which] = on)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    java.util.Set<String> picked = new java.util.HashSet<>();
+                    for (int i = 0; i < apps.size(); i++) {
+                        if (checked[i]) {
+                            picked.add(apps.get(i)[0]);
+                        }
+                    }
+                    BankApps.setChosen(this, picked);
+                    refreshBanks();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    private void openUsageAccess() {
+        try {
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS,
+                    android.net.Uri.fromParts("package", getPackageName(), null)));
+        } catch (ActivityNotFoundException | SecurityException e) {
+            startActivity(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
         }
     }
 
@@ -947,6 +1006,7 @@ public class PreviewActivity extends Activity {
         face.setColor(Prefs.color(this));
         refreshSetup();
         refreshPages();
+        refreshBanks();
     }
 
     @Override
