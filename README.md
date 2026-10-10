@@ -141,3 +141,7 @@ The SDK is looked for at `$ANDROID_HOME`, then `~/Android/Sdk`, then `~/Library/
 
 The segment fonts are [DSEG](https://www.keshikan.net/fonts-e.html) by keshikan, under the SIL Open
 Font License 1.1 (`assets/fonts/DSEG-LICENSE.txt`).
+
+## Licence
+
+MIT (`LICENSE`), except the DSEG fonts in `assets/fonts/`, which keep their own licence.
