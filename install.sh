@@ -61,6 +61,18 @@ if [ ! -f "$APK" ] || [ -n "$(find src res assets AndroidManifest.xml build.sh -
 fi
 
 enabled() { phone settings get secure "$1" | tr ':' '\n' | has -x "$PKG/($PKG)?\\.$2"; }
+# The cover button is on, or the app has switched it off only while the phone is open (ButtonPause,
+# for banking apps), which MediaListener's dump says. After an update MediaListener takes a moment
+# to come back.
+button_on() {
+    enabled enabled_accessibility_services ButtonService && return 0
+    [ "$fresh" = 1 ] && return 1
+    for _ in 1 2 3 4 5; do
+        phone dumpsys activity service "$PKG/.MediaListener" | has "cover button: paused" && return 0
+        sleep 1
+    done
+    return 1
+}
 face_in_use() { phone dumpsys activity services "$PKG/.LcdSessionService" | has "c:com\.motorola\.clockface"; }
 # Device state 0 is folded shut on the razr.
 is_open() { [ "$(phone cmd device_state print-state 2>/dev/null)" != 0 ]; }
@@ -102,9 +114,10 @@ done
 # The rest are switches Android leaves to you, on the inside screen.
 missing=()
 
-if ! enabled enabled_accessibility_services ButtonService; then
+if ! button_on; then
     say "Accessibility: turn on \"LCD Clock cover button\""
     echo "  It lets the outside screen open LCD Clock's pages and the volume-button holds work."
+    echo "  It switches itself off while the phone is open, so banking apps don't object to it."
     inside_screen
     open_screen -a android.settings.ACCESSIBILITY_SETTINGS || true
     pause "On the phone: (Downloaded apps →) LCD Clock cover button → on."

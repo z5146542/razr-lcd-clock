@@ -19,11 +19,14 @@ import android.view.accessibility.AccessibilityEvent;
  * nothing. Accessibility services may start activities from the background, which nothing else
  * on the razr 40's small cover screen can do. Short presses still change the volume. It also runs
  * CoverHome, which opens the cover pages when the outside screen wakes, ClockWidget's
- * minute-by-minute redraw of the home screen widget while the inside screen is on, and PipGuard,
- * which keeps picture-in-picture video playing when the phone closes.
+ * minute-by-minute redraw of the home screen widget while the inside screen is on (when
+ * MediaListener isn't running it), and PipGuard, which keeps picture-in-picture video playing when
+ * the phone closes. ButtonPause switches it off while the phone is open, for banking apps.
  */
 public class ButtonService extends AccessibilityService {
     private static final long HOLD_MS = 700;
+    /** Connected: Android has it on. */
+    static boolean running;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     /** The volume key being held, or 0. */
@@ -91,6 +94,12 @@ public class ButtonService extends AccessibilityService {
 
     @Override
     protected void onServiceConnected() {
+        running = true;
+        // On, whoever switched it on: switched off in Android's settings from here, it stays off.
+        // (Unless ButtonPause took it out again while it was connecting.)
+        if (ButtonPause.isOn(this)) {
+            Prefs.get(this).edit().remove(Prefs.BUTTON_PAUSED).apply();
+        }
         CoverHome.start(this);
         ClockWidget.start(this);
         PipGuard.start(this);
@@ -100,7 +109,10 @@ public class ButtonService extends AccessibilityService {
     @Override
     public boolean onUnbind(Intent intent) {
         CoverHome.stop();
-        ClockWidget.stop();
+        running = false;
+        if (MediaListener.connected == null) {
+            ClockWidget.stop();
+        }
         PipGuard.stop();
         return super.onUnbind(intent);
     }

@@ -56,6 +56,10 @@ final class CoverHome {
         app = context.getApplicationContext();
         coverState = coverState();
         app.getSystemService(DisplayManager.class).registerDisplayListener(coverListener, main);
+        if (coverState == Display.STATE_ON) {
+            // ButtonPause switches the service on as the phone closes, after the cover has woken.
+            main.postDelayed(CoverHome::onWake, WAKE_SETTLE_MS);
+        }
     }
 
     static void stop() {

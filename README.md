@@ -42,7 +42,9 @@ clock-face plugin interface, so a Motorola update could break it.
   choice, or toggles the flashlight.
 - **Home screen widgets**: the face, or just the time.
 - **Picture-in-picture**: video keeps playing when you close the phone. The razr would otherwise
-  close the picture-in-picture window and stop the video.
+  close the picture-in-picture window and stop the video. For this, the accessibility switch stays
+  on with the phone open while a video app is playing, so a banking app opened then may object.
+  Turn "Keep playing when you close the phone" off if that matters.
 
 Everything is set up in the LCD Clock app on the inside screen. Its **Setup** list shows what's
 still missing.
@@ -70,7 +72,10 @@ location, notifications, audio files, and secure settings for the saver and Nigh
 Then it opens the screens for the switches Android leaves to you, and waits while you turn each on:
 
 1. **Accessibility**: turn on "LCD Clock cover button". This lets the outside screen open the pages
-   and makes the volume holds work.
+   and makes the volume holds work. The app switches it off while the phone is open and back on
+   when you close it, because banking apps such as HSBC's refuse to run, or flag the phone, while an
+   app from outside Google Play has accessibility on. So in Settings it shows as off while the
+   phone is open.
 2. **Notification access**: allow "LCD Clock music page". This is for the MUSIC tabs and the
    notifications panel.
 3. **Clock styles**: pick **LCD Digits**. Motorola keeps this choice to itself, so it can't be set
@@ -125,7 +130,12 @@ The SDK is looked for at `$ANDROID_HOME`, then `~/Android/Sdk`, then `~/Library/
 - **Starting it with the phone closed**: only an accessibility service (`ButtonService`) may start
   activities from the background, so it opens `CoverActivity` on each outside-screen wake and on
   volume holds.
-- **Music and notifications**: these come through a notification listener (`MediaListener`).
+- **Accessibility only while closed**: `ButtonPause` takes `ButtonService` out of the enabled
+  accessibility services when the phone opens and puts it back when it closes, using the "write
+  secure settings" permission `install.sh` grants. With "keep playing" on, it stays on while a
+  picture-in-picture-capable app plays, for `PipGuard`.
+- **Music and notifications**: these come through a notification listener (`MediaListener`), which
+  Android keeps running, so it also runs `ButtonPause`.
 
 ## Layout
 

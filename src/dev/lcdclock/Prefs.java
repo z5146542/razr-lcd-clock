@@ -23,6 +23,8 @@ final class Prefs {
     static final String FACE_HOME = "face_home";
     /** Expand a PiP window while the phone closes so its video keeps playing (PipGuard). */
     static final String KEEP_PIP = "keep_pip";
+    /** ButtonPause switched ButtonService off while the phone is open, and will switch it back on. */
+    static final String BUTTON_PAUSED = "button_paused";
     static final String LAST_RECORDING = "last_recording";
     static final String LAST_RECORDING_MS = "last_recording_ms";
     static final String TAB_ORDER = "tab_order";

@@ -22,8 +22,8 @@ import android.widget.RemoteViews;
  * AM/PM, alarm bell, date and battery) without the padlock, and "LCD Clock time" (TimeWidget,
  * 3x1), just the time row; each a picture LcdClockView draws. A widget can't run the
  * face itself, so the picture is redrawn each minute, but only while the inside screen is on (the
- * minute tick and screen-on reach the receiver ButtonService registers): nothing runs for it while
- * the phone is closed or its screen is off. Tapping it opens the LCD Clock app.
+ * minute tick and screen-on reach the receiver MediaListener or ButtonService registers): nothing
+ * runs for it while the phone is closed or its screen is off. Tapping it opens the LCD Clock app.
  */
 public class ClockWidget extends AppWidgetProvider {
     /** Largest picture drawn, in pixels across, however big the widget is. */
@@ -45,7 +45,7 @@ public class ClockWidget extends AppWidgetProvider {
         }
     };
 
-    /** Starts redrawing on the minute tick and screen-on; ButtonService runs it while it's on. */
+    /** Starts redrawing on the minute tick and screen-on; MediaListener and ButtonService run it while they're on. */
     static void start(Context context) {
         if (app != null) {
             return;

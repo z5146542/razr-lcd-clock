@@ -180,7 +180,10 @@ public class PreviewActivity extends Activity {
         keepPip.setTextColor(Color.WHITE);
         keepPip.setTextSize(16);
         keepPip.setChecked(Prefs.keepPip(this));
-        keepPip.setOnCheckedChangeListener((button, on) -> Prefs.get(this).edit().putBoolean(Prefs.KEEP_PIP, on).apply());
+        keepPip.setOnCheckedChangeListener((button, on) -> {
+            Prefs.get(this).edit().putBoolean(Prefs.KEEP_PIP, on).apply();
+            ButtonPause.update();
+        });
         pip.addView(keepPip);
         TextView pipHelp = text(getString(R.string.pip_help), 14);
         pipHelp.setPadding(0, Math.round(8 * dp), 0, 0);
@@ -210,8 +213,8 @@ public class PreviewActivity extends Activity {
         setupCard.removeAllViews();
         setupRow(LcdSession.isFaceInUse(), R.string.setup_face, R.string.setup_face_fix, R.string.open,
                 this::openClockStyles);
-        setupRow(coverButtonOn(), R.string.setup_button, R.string.setup_button_fix, R.string.turn_on,
-                this::openAccessibility);
+        setupRow(coverButtonOn(), ButtonPause.manages(this) ? R.string.setup_button_closed : R.string.setup_button,
+                R.string.setup_button_fix, R.string.turn_on, this::openAccessibility);
         setupRow(Media.allowed(this), R.string.setup_music, R.string.setup_music_fix, R.string.allow,
                 this::openNotificationAccess);
         setupRow(missingPermissions().isEmpty(), R.string.setup_permissions, R.string.setup_permissions_fix,
@@ -247,10 +250,9 @@ public class PreviewActivity extends Activity {
         setupCard.addView(row);
     }
 
+    /** On, or switched off by ButtonPause only while the phone is open. */
     private boolean coverButtonOn() {
-        String enabled = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        ComponentName service = new ComponentName(this, ButtonService.class);
-        return enabled != null && (enabled.contains(service.flattenToString()) || enabled.contains(service.flattenToShortString()));
+        return ButtonPause.isOn(this) || ButtonPause.paused(this);
     }
 
     private void openAccessibility() {

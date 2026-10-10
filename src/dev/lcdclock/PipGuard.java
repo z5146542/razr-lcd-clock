@@ -2,6 +2,7 @@ package dev.lcdclock;
 
 import android.accessibilityservice.AccessibilityService;
 import android.app.ActivityOptions;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
@@ -40,7 +41,8 @@ import java.util.Map;
  * found to expand). Only a real rotation of the inner screen puts that right, so the first time a
  * playing video leaves the screen after a fold (most likely into PiP) this turns the screen once
  * (PipResetActivity). Run by ButtonService, whose accessibility binding gives the window access,
- * window changes, the Home action and the right to open activities from the background.
+ * window changes, the Home action and the right to open activities from the background; with the
+ * phone open, ButtonPause keeps that on only while a PiP-capable app is playing.
  */
 final class PipGuard {
     /**
@@ -270,7 +272,7 @@ final class PipGuard {
             return;
         }
         List<String> playing = Media.playingApps(service);
-        playing.removeIf(app -> !supportsPip(app));
+        playing.removeIf(app -> !supportsPip(service, app));
         if (playing.isEmpty()) {
             playingInFront = null;
             return;
@@ -299,12 +301,13 @@ final class PipGuard {
         startReset(app);
     };
 
-    private static boolean supportsPip(String app) {
+    /** Whether an app has an activity that can go into PiP; also ButtonPause's test for a video playing. */
+    static boolean supportsPip(Context context, String app) {
         Boolean known = pipApps.get(app);
         if (known == null) {
             known = false;
             try {
-                PackageInfo info = service.getPackageManager().getPackageInfo(app, PackageManager.GET_ACTIVITIES);
+                PackageInfo info = context.getPackageManager().getPackageInfo(app, PackageManager.GET_ACTIVITIES);
                 if (info.activities != null) {
                     for (ActivityInfo activity : info.activities) {
                         known |= (activity.flags & FLAG_SUPPORTS_PIP) != 0;

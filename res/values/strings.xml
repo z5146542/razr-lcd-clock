@@ -100,7 +100,8 @@
     <string name="setup_face">LCD Digits is the clock style</string>
     <string name="setup_face_fix">Choose LCD Digits in Clock styles. If you already have, wake the outside screen once.</string>
     <string name="setup_button">Cover button service is on</string>
-    <string name="setup_button_fix">Lets volume holds and the clock face open the pages: turn on \"LCD Clock cover button\" in Accessibility.</string>
+    <string name="setup_button_closed">Cover button service is on while the phone is closed (off while it\'s open, so banking apps don\'t object)</string>
+    <string name="setup_button_fix">Lets volume holds and the clock face open the pages: turn on \"LCD Clock cover button\" in Accessibility. It switches itself off while the phone is open.</string>
     <string name="setup_music">Notification access is on</string>
     <string name="setup_music_fix">Lets the music tabs see and control what\'s playing.</string>
     <string name="setup_permissions">Microphone, calendar, location and audio files allowed</string>
@@ -116,7 +117,7 @@
     <string name="timeout_dialog_title">%1$s: screen off after</string>
     <string name="pip_title">Picture-in-picture</string>
     <string name="pip_keep">Keep playing when you close the phone</string>
-    <string name="pip_help">The razr closes picture-in-picture windows the moment it folds, and apps stop their video when that happens. With this on, LCD Clock turns the window back into the full app while the phone is closing, so apps that can play in the background (YouTube, Chzzk) keep the sound going. Open the phone and the app is there full screen, still playing. The razr also loses track of where picture-in-picture belongs whenever it folds, which sends the next window off the right edge of the screen; to put that right the screen turns once (a moment of black) the first time a playing video leaves the screen after the phone has been folded. Needs the cover button (accessibility) turned on.</string>
+    <string name="pip_help">The razr closes picture-in-picture windows the moment it folds, and apps stop their video when that happens. With this on, LCD Clock turns the window back into the full app while the phone is closing, so apps that can play in the background (YouTube, Chzzk) keep the sound going. Open the phone and the app is there full screen, still playing. The razr also loses track of where picture-in-picture belongs whenever it folds, which sends the next window off the right edge of the screen; to put that right the screen turns once (a moment of black) the first time a playing video leaves the screen after the phone has been folded. Needs the cover button (accessibility) turned on. While the phone is open, this keeps the cover button on whenever a video app is playing, so a banking app opened then may object; switch this off if that matters.</string>
     <string name="ha_title">Home Assistant</string>
     <string-array name="tab_help">
         <item>LCD Clock\'s own countdown timer: it keeps running with the screen off and rings on the outside screen.</item>
