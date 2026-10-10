@@ -85,11 +85,13 @@ settings. The keystore isn't committed, so back it up yourself.
 
 ## Optional setup, in the app
 
-- **Home Assistant**: enter your server address and a long-lived access token (Home Assistant → your
-  profile → Security). The HOME icons then show whether their entities are on, and switch them
-  together. Buttons can also tap Home Assistant's own Button widgets instead.
+- **Home Assistant**: enter your server's `https://` address and a long-lived access token (Home
+  Assistant → your profile → Security). The HOME icons then show whether their entities are on, and
+  switch them together. Plain `http://` addresses are refused, so the token never travels
+  unencrypted. Buttons can also tap Home Assistant's own Button widgets instead.
 - **VPN tile**: needs [WG Tunnel](https://github.com/zaneschepke/wgtunnel) with its remote control
-  turned on. Enter its key and the tunnel name in the app.
+  turned on. Enter its key and the tunnel name in the app. The key only goes to the WG Tunnel that
+  was installed when you saved it: if you reinstall WG Tunnel from somewhere else, save it again.
 - **Per page**: show or hide each page, change the tab order, and set how long the outside screen
   stays on. Also on the cards: the alarm's snooze length and the ring sounds.
 
@@ -99,8 +101,8 @@ Everything stays on the phone, except:
 
 - **Weather**: approximate location goes to [Open-Meteo](https://open-meteo.com/), and Android's
   geocoder looks up the place name.
-- **Home Assistant**: requests go to the server you enter. The token is kept in the app's encrypted
-  storage and never logged.
+- **Home Assistant**: requests go over HTTPS to the server you enter. The token is kept in the app's
+  encrypted storage and never logged.
 
 ## Building only
 

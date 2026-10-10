@@ -39,6 +39,7 @@ final class Prefs {
             CoverActivity.PAGE_CALENDAR, CoverActivity.PAGE_WEATHER, CoverActivity.PAGE_RECORDER,
             CoverActivity.PAGE_HOME, CoverActivity.PAGE_MUSIC, HOLD_TORCH);
     static final String WG_TUNNEL = "wg_tunnel";
+    /** Left from when WG Tunnel's key was kept here, readable before the first unlock (QuickControls.wgKey). */
     static final String WG_KEY = "wg_key";
     /** Left from when RECORDER could record through Fossify Voice Recorder's widget (dropFossify). */
     private static final String FOSSIFY_WIDGET = "fossify_widget";

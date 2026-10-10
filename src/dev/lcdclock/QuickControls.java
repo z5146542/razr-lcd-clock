@@ -5,7 +5,9 @@ import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -19,8 +21,11 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
+import android.util.Base64;
 import android.util.Log;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -54,6 +59,9 @@ final class QuickControls {
     private static final String WG_PACKAGE = "com.zaneschepke.wireguardautotunnel";
     private static final ComponentName WG_REMOTE = new ComponentName(WG_PACKAGE,
             WG_PACKAGE + ".core.broadcast.RemoteControlReceiver");
+    /** In wireGuardSecrets. */
+    private static final String WG_KEY = "key";
+    private static final String WG_SIGNER = "signer";
 
     private static String torchCamera;
     private static boolean torchOn;
@@ -85,8 +93,7 @@ final class QuickControls {
             return context.getPackageManager().resolveContentProvider(WELLBEING_API.getAuthority(), 0) != null;
         }
         if (WIREGUARD.equals(control)) {
-            return !Prefs.get(context).getString(Prefs.WG_TUNNEL, "").isEmpty()
-                    && !Prefs.get(context).getString(Prefs.WG_KEY, "").isEmpty();
+            return !Prefs.get(context).getString(Prefs.WG_TUNNEL, "").isEmpty() && !wgKey(context).isEmpty();
         }
         return true;
     }
@@ -319,14 +326,78 @@ final class QuickControls {
         return false;
     }
 
+    /**
+     * WG Tunnel's key, and the signing certificate of the WG Tunnel it was saved for, in
+     * credential-encrypted storage: unlike Prefs, it can't be read before the first unlock.
+     */
+    private static SharedPreferences wireGuardSecrets(Context context) {
+        return context.getSharedPreferences("wireguard", Context.MODE_PRIVATE);
+    }
+
+    /** WG Tunnel's remote control key, or "" before it's set. */
+    static String wgKey(Context context) {
+        SharedPreferences secrets = wireGuardSecrets(context);
+        SharedPreferences old = Prefs.get(context);
+        if (old.contains(Prefs.WG_KEY)) {
+            if (!secrets.contains(WG_KEY)) {
+                secrets.edit().putString(WG_KEY, old.getString(Prefs.WG_KEY, "")).commit();
+            }
+            old.edit().remove(Prefs.WG_KEY).apply();
+        }
+        return secrets.getString(WG_KEY, "");
+    }
+
+    /** Saves the tunnel and key, for the WG Tunnel installed now. */
+    static void setWireGuard(Context context, String tunnel, String key) {
+        Prefs.get(context).edit().putString(Prefs.WG_TUNNEL, tunnel).remove(Prefs.WG_KEY).apply();
+        wireGuardSecrets(context).edit().putString(WG_KEY, key).putString(WG_SIGNER, wgSigner(context)).apply();
+    }
+
+    /** The installed WG Tunnel's signing certificate (SHA-256, Base64), or "" if it isn't installed. */
+    private static String wgSigner(Context context) {
+        try {
+            Signature cert = context.getPackageManager()
+                    .getPackageInfo(WG_PACKAGE, PackageManager.GET_SIGNING_CERTIFICATES)
+                    .signingInfo.getApkContentsSigners()[0];
+            return Base64.encodeToString(MessageDigest.getInstance("SHA-256").digest(cert.toByteArray()),
+                    Base64.NO_WRAP);
+        } catch (PackageManager.NameNotFoundException | NoSuchAlgorithmException e) {
+            return "";
+        }
+    }
+
+    /**
+     * Whether the installed WG Tunnel is signed like the one the key was saved for, so another app
+     * under its package name never gets the key. A key saved while WG Tunnel wasn't installed
+     * trusts the first WG Tunnel it goes to.
+     */
+    private static boolean wgTrusted(Context context) {
+        SharedPreferences secrets = wireGuardSecrets(context);
+        String signer = secrets.getString(WG_SIGNER, "");
+        if (signer.isEmpty()) {
+            signer = wgSigner(context);
+            if (signer.isEmpty()) {
+                return false;
+            }
+            secrets.edit().putString(WG_SIGNER, signer).apply();
+        }
+        return context.getPackageManager().hasSigningCertificate(WG_PACKAGE,
+                Base64.decode(signer, Base64.NO_WRAP), PackageManager.CERT_INPUT_SHA256);
+    }
+
     static void toggleWireGuard(Context context) {
         if (Lock.locked(context)) {
             Log.d(Binders.TAG, "wireguard: locked, not switching");
             return;
         }
+        if (!wgTrusted(context)) {
+            Log.w(Binders.TAG, "wireguard: WG Tunnel is missing or signed differently since the key was saved,"
+                    + " not sending it");
+            return;
+        }
         String action = WG_PACKAGE + (vpnOn(context) ? ".STOP_TUNNEL" : ".START_TUNNEL");
         context.sendBroadcast(new Intent(action).setComponent(WG_REMOTE)
-                .putExtra("key", Prefs.get(context).getString(Prefs.WG_KEY, ""))
+                .putExtra("key", wgKey(context))
                 .putExtra("tunnelName", Prefs.get(context).getString(Prefs.WG_TUNNEL, "")));
     }
 }

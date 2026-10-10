@@ -26,6 +26,8 @@ public class LcdOptionsProvider extends ContentProvider {
             return null;
         }
         Context context = getContext();
+        // Android doesn't apply the provider's read permission to call(): only MotoClockFace may list.
+        context.enforceCallingPermission(getReadPermission(), METHOD_LIST_OPTIONS);
         ArrayList<Bundle> faces = new ArrayList<>();
         faces.add(face(context, context.getString(R.string.face_digits)));
         Bundle result = new Bundle();

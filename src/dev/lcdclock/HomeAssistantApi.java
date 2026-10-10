@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 /**
  * Talks to Home Assistant's REST API with a long-lived access token, so the HOME buttons can
  * show whether their entities are on and switch them together. The token lives in
- * credential-encrypted app storage and is never logged.
+ * credential-encrypted app storage, is never logged, and only goes to an https:// address.
  */
 final class HomeAssistantApi {
     /** Entity domains offered in the picker; all have an on/off state. */
@@ -192,6 +192,10 @@ final class HomeAssistantApi {
     private static String request(Context context, String method, String path, String body) throws IOException {
         if (server(context).isEmpty()) {
             throw new IOException("no server address");
+        }
+        // The token gives full control of Home Assistant: never send it unencrypted.
+        if (!server(context).regionMatches(true, 0, "https://", 0, 8)) {
+            throw new IOException("the address must start with https://");
         }
         HttpURLConnection http = (HttpURLConnection) new URL(server(context) + path).openConnection();
         try {

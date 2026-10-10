@@ -151,13 +151,12 @@ public class PreviewActivity extends Activity {
         controls.addView(text(getString(R.string.wg_help), 13));
         EditText tunnel = input(Prefs.get(this).getString(Prefs.WG_TUNNEL, ""), getString(R.string.wg_tunnel_hint),
                 InputType.TYPE_CLASS_TEXT);
-        EditText key = input(Prefs.get(this).getString(Prefs.WG_KEY, ""), getString(R.string.wg_key_hint),
+        EditText key = input(QuickControls.wgKey(this), getString(R.string.wg_key_hint),
                 InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         controls.addView(tunnel);
         controls.addView(key);
         controls.addView(flatButton(getString(R.string.wg_save), v -> {
-            Prefs.get(this).edit().putString(Prefs.WG_TUNNEL, tunnel.getText().toString().trim())
-                    .putString(Prefs.WG_KEY, key.getText().toString().trim()).apply();
+            QuickControls.setWireGuard(this, tunnel.getText().toString().trim(), key.getText().toString().trim());
             Prefs.setQuickShown(this, QuickControls.WIREGUARD, true);
             refreshQuick();
             Toast.makeText(this, R.string.wg_saved, Toast.LENGTH_SHORT).show();
