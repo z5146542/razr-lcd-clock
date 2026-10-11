@@ -1,8 +1,10 @@
 package dev.lcdclock;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -189,6 +191,7 @@ public class CoverActivity extends Activity {
         setContentView(root);
         Media.listen(mediaChanged);
         getSystemService(DisplayManager.class).registerDisplayListener(innerScreen, null);
+        registerReceiver(screenOff, new IntentFilter(Intent.ACTION_SCREEN_OFF), Context.RECEIVER_NOT_EXPORTED);
         show(getIntent());
     }
 
@@ -197,6 +200,7 @@ public class CoverActivity extends Activity {
         shownPage = null;
         Media.unlisten(mediaChanged);
         getSystemService(DisplayManager.class).unregisterDisplayListener(innerScreen);
+        unregisterReceiver(screenOff);
         super.onDestroy();
     }
 
@@ -355,6 +359,21 @@ public class CoverActivity extends Activity {
             Log.w(Binders.TAG, "can't set the screen timeout", e);
         }
     }
+
+    /**
+     * The screen went off with a page up, most often its own timeout: lock now. Android would
+     * otherwise wait for its "lock after screen timeout" (5 minutes, say), as it does after its own
+     * timeout, leaving the closed phone unlocked in the meantime.
+     */
+    private final BroadcastReceiver screenOff = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!ringing(context) && CoverScreen.isPhoneClosed(context) && !Lock.locked(context)) {
+                Log.d(Binders.TAG, "lock: screen off on the cover, locking");
+                ButtonService.lockScreen();
+            }
+        }
+    };
 
     /** Puts the page's own timeout back once the ringing stops. */
     private final Runnable ringWatch = this::applyTimeout;

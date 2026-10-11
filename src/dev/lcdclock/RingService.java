@@ -42,6 +42,8 @@ public class RingService extends Service {
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final Runnable timeout = this::stopRinging;
+    /** Swaps a sound that won't play for the phone's alarm sound; see updateSound. */
+    private final Runnable fallback = this::fallBack;
     private Ringtone ringtone;
     /** The sound playing, or null for silence. */
     private Uri playing;
@@ -117,6 +119,7 @@ public class RingService extends Service {
         if (java.util.Objects.equals(want, playing) && (want == null || ringtone != null)) {
             return;
         }
+        main.removeCallbacks(fallback);
         if (ringtone != null) {
             ringtone.stop();
             ringtone = null;
@@ -124,14 +127,16 @@ public class RingService extends Service {
         playing = want;
         if (want != null) {
             play(want);
-            // A sound that won't play (a deleted file, say): the phone's alarm sound instead.
-            main.postDelayed(() -> {
-                if (ringtone != null && !ringtone.isPlaying() && want.equals(playing)
-                        && !want.equals(Settings.System.DEFAULT_ALARM_ALERT_URI)) {
-                    ringtone.stop();
-                    play(Settings.System.DEFAULT_ALARM_ALERT_URI);
-                }
-            }, 1000);
+            main.postDelayed(fallback, 1000);
+        }
+    }
+
+    /** A sound that won't play (a deleted file, say): the phone's alarm sound instead. */
+    private void fallBack() {
+        if (ringtone != null && !ringtone.isPlaying() && playing != null
+                && !playing.equals(Settings.System.DEFAULT_ALARM_ALERT_URI)) {
+            ringtone.stop();
+            play(Settings.System.DEFAULT_ALARM_ALERT_URI);
         }
     }
 
@@ -198,11 +203,15 @@ public class RingService extends Service {
 
     @Override
     public void onDestroy() {
-        main.removeCallbacks(timeout);
+        // Stopped within a second of ringing, the fallback check would otherwise find the sound
+        // stopped and start the alarm sound again, with nothing left to stop it.
+        main.removeCallbacksAndMessages(null);
         unregisterReceiver(screenOff);
         if (ringtone != null) {
             ringtone.stop();
+            ringtone = null;
         }
+        playing = null;
         vibrator.cancel();
         TimerController.onRingingStopped(this);
         super.onDestroy();

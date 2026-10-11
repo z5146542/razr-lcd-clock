@@ -42,7 +42,7 @@ final class CoverTabs extends View {
     }
 
     private static final int GREY = 0xFF7A7A7A;
-    private static final long TICK_MS = 500;
+    private static final long TICK_MS = 60_000;
 
     private final SegmentPainter seg;
     private final Listener listener;
@@ -61,7 +61,7 @@ final class CoverTabs extends View {
         public void run() {
             invalidate();
             if (getWindowVisibility() == VISIBLE) {
-                postDelayed(this, TICK_MS);
+                postDelayed(this, TICK_MS - System.currentTimeMillis() % TICK_MS + 20); // the next minute
             }
         }
     };

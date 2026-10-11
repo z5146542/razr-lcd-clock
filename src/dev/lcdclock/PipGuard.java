@@ -32,7 +32,7 @@ import java.util.Map;
  * dismissed. So while the phone is closing this expands the PiP window back to full screen through
  * the "expand" accessibility action SystemUI gives it: an app on its way out of PiP no longer
  * counts as in PiP, closing just turns its screen off, and apps that play in the background
- * (YouTube, Chzzk) carry on; opening the phone finds the app full screen, still playing. If the
+ * (YouTube, Twitch) carry on; opening the phone finds the app full screen, still playing. If the
  * hinge only dipped and the phone never closed, Home puts it straight back into PiP.
  *
  * SystemUI's PiP code also takes every display's rotation for the inner screen's, and the cover

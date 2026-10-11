@@ -40,7 +40,6 @@ final class CoverView extends View {
 
     private static final int GREY = 0xFF7A7A7A;
     private static final int OUTLINE = 0xFFB4B4B4;
-    private static final long TICK_MS = 250;
     private static final long REPEAT_DELAY_MS = 400;
     private static final long REPEAT_EVERY_MS = 90;
     /** AM/PM above the bell, after the alarm's minutes, in digit heights (as on the face). */
@@ -69,9 +68,24 @@ final class CoverView extends View {
         @Override
         public void run() {
             invalidate();
-            handler.postDelayed(this, TICK_MS);
+            handler.postDelayed(this, nextTick());
         }
     };
+
+    /**
+     * Only as often as something on the page changes: the blink while ringing, the next second of a
+     * running timer, otherwise once a second to catch changes made elsewhere (the notification).
+     */
+    private long nextTick() {
+        Context context = getContext();
+        if (CoverActivity.ringing(context)) {
+            return 200;
+        }
+        if (!alarmTab && TimerController.state(context) == TimerController.State.RUNNING) {
+            return TimerController.remaining(context) % 1000 + 10;
+        }
+        return 1000;
+    }
 
     private final Runnable repeat = new Runnable() {
         @Override

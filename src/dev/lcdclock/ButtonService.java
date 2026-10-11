@@ -27,6 +27,7 @@ public class ButtonService extends AccessibilityService {
     private static final long HOLD_MS = 700;
     /** Connected: Android has it on. */
     static boolean running;
+    private static ButtonService instance;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     /** The volume key being held, or 0. */
@@ -95,6 +96,7 @@ public class ButtonService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         running = true;
+        instance = this;
         // On, whoever switched it on: switched off in Android's settings from here, it stays off.
         // (Unless ButtonPause took it out again while it was connecting.)
         if (ButtonPause.isOn(this)) {
@@ -110,6 +112,7 @@ public class ButtonService extends AccessibilityService {
     @Override
     public boolean onUnbind(Intent intent) {
         running = false;
+        instance = null;
         CoverHome.stop();
         if (MediaListener.connected == null) {
             ClockWidget.stop();
@@ -124,6 +127,11 @@ public class ButtonService extends AccessibilityService {
         if (event.getDisplayId() == Display.DEFAULT_DISPLAY) {
             PipGuard.onWindowsChanged();
         }
+    }
+
+    /** Locks the phone now, as the power button does; false while the service is off. */
+    static boolean lockScreen() {
+        return instance != null && instance.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
     }
 
     @Override
