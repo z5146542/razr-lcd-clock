@@ -56,6 +56,13 @@ clock-face plugin interface, so a Motorola update could break it.
   - **Quick controls** (swipe down): flashlight, SOS, Do Not Disturb, ring mode, media volume,
     battery saver, Night Light, Bedtime, Home Assistant buttons and a WireGuard VPN (through WG
     Tunnel).
+- **Calls**: when a call rings with the phone closed, a CALL panel comes up over Motorola's own
+  call screen. It shows the caller's photo (or their initial), their name as the calling app shows
+  it (your contact's name, else the number) and the app, with a red DECLINE and a green ANSWER.
+  Once answered, it shows the call's time, MUTE and a red HANG UP. It works for the phone, WhatsApp,
+  KakaoTalk and other apps that post a call notification. Opening the phone hides it, and the call
+  carries on inside. Some phone calls can't be muted from the outside screen; MUTE then shows
+  NO MUTE.
 - **Alarm and timer**: they ring on the outside screen with your choice of sound and vibration.
 - **Volume-button holds**: with the phone closed, holding volume up or down opens a page of your
   choice, or toggles the flashlight.
@@ -165,6 +172,12 @@ The SDK is looked for at `$ANDROID_HOME`, then `~/Android/Sdk`, then `~/Library/
   `install.sh` grants both.
 - **Music and notifications**: these come through a notification listener (`MediaListener`), which
   Android keeps running, so it also runs `ButtonPause`.
+- **Calls**: `Calls` reads calls from their notifications, through a list of readers tried in
+  order: Android's CallStyle extras (answer, decline and hang-up intents), then buttons matched by
+  their labels in English or Korean. An app that needs its own reading gets a reader added to the
+  front of `Calls.SOURCES`. While a call rings, Motorola's call screen is a system window above
+  every app, so `CallOverlay` shows `CallView` as an accessibility overlay on the outside screen. With
+  `ButtonService` off, it opens as a `CoverActivity` page instead, which Motorola's screen may hide.
 
 ## Layout
 
