@@ -58,11 +58,12 @@ clock-face plugin interface, so a Motorola update could break it.
     Tunnel).
 - **Calls**: when a call rings with the phone closed, a CALL panel comes up over Motorola's own
   call screen. It shows the caller's photo (or their initial), their name as the calling app shows
-  it (your contact's name, else the number) and the app, with a red DECLINE and a green ANSWER.
-  Once answered, it shows the call's time, MUTE and a red HANG UP. It works for the phone, WhatsApp,
+  it (your contact's name, else the number) and the app, with a red hang-up button and a green
+  answer button. Once answered, it shows the call's time, a microphone to mute (struck through
+  while muted) and the red hang-up button. It works for the phone, WhatsApp,
   KakaoTalk and other apps that post a call notification. Opening the phone hides it, and the call
-  carries on inside. Some phone calls can't be muted from the outside screen; MUTE then shows
-  NO MUTE.
+  carries on inside. Some phone calls can't be muted from the outside screen; the struck-through
+  microphone then shows grey.
 - **Alarm and timer**: they ring on the outside screen with your choice of sound and vibration.
 - **Volume-button holds**: with the phone closed, holding volume up or down opens a page of your
   choice, or toggles the flashlight.

@@ -7,6 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
@@ -15,7 +16,8 @@ import android.text.format.DateUtils;
 
 /**
  * The CALL panel, for a call in any app (Calls): the caller's picture and name, and while it rings
- * a red DECLINE and a green ANSWER, once answered the call's time, MUTE and a red HANG UP. No menu
+ * a red hang-up and a green answer button (handset icons), once answered the call's time, a
+ * microphone to mute (struck through while muted) and the red hang-up. No menu
  * row, and swipes do nothing, so a call isn't swiped away by mistake. Runs `onGone` once there's no
  * call any more.
  */
@@ -24,6 +26,30 @@ final class CallView extends CoverPage {
     private static final int END = 2;
     private static final int MUTE = 3;
     static final int ANSWER_GREEN = 0xFF1FB347;
+    /** The handset turned on its side, the usual "end call" sign. */
+    private static final float HANG_UP_ANGLE = 135;
+    /** A phone handset in a 24-unit box: Material's "call" icon. */
+    private static final Path HANDSET = new Path();
+
+    static {
+        Path p = HANDSET;
+        p.moveTo(20.01f, 15.38f);
+        p.rCubicTo(-1.23f, 0, -2.42f, -0.2f, -3.53f, -0.56f);
+        p.rCubicTo(-0.35f, -0.12f, -0.74f, -0.03f, -1.01f, 0.24f);
+        p.rLineTo(-1.57f, 1.97f);
+        p.rCubicTo(-2.83f, -1.35f, -5.48f, -3.9f, -6.89f, -6.83f);
+        p.rLineTo(1.95f, -1.66f);
+        p.rCubicTo(0.27f, -0.28f, 0.35f, -0.67f, 0.24f, -1.02f);
+        p.rCubicTo(-0.37f, -1.11f, -0.56f, -2.3f, -0.56f, -3.53f);
+        p.rCubicTo(0, -0.54f, -0.45f, -0.99f, -0.99f, -0.99f);
+        p.lineTo(4.19f, 3);
+        p.cubicTo(3.65f, 3, 3, 3.24f, 3, 3.99f);
+        p.cubicTo(3, 13.28f, 10.73f, 21, 20.01f, 21);
+        p.rCubicTo(0.71f, 0, 0.99f, -0.63f, 0.99f, -1.18f);
+        p.rLineTo(0, -3.45f);
+        p.rCubicTo(0, -0.54f, -0.45f, -0.99f, -0.99f, -0.99f);
+        p.close();
+    }
 
     private final Runnable onGone;
     private final Paint photoPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -112,37 +138,62 @@ final class CallView extends CoverPage {
         RectF left = new RectF(bx + pad * 1.5f, y, bx + pad * 1.5f + w, y + h);
         RectF right = new RectF(left.right + gap, y, left.right + gap + w, y + h);
         if (call.ringing) {
-            filled(canvas, END, left, CLEAR_RED, "DECLINE", call.end != null);
-            filled(canvas, ANSWER, right, ANSWER_GREEN, "ANSWER", call.answer != null);
+            filledIcon(canvas, END, left, CLEAR_RED, HANG_UP_ANGLE, call.end != null);
+            filledIcon(canvas, ANSWER, right, ANSWER_GREEN, 0, call.answer != null);
         } else {
             boolean muted = Calls.muted(getContext());
             button(canvas, MUTE, left, muted, !muteFailed, color);
-            String s = muteFailed ? "NO MUTE" : muted ? "MUTED" : "MUTE";
-            centred(canvas, s, left, muteFailed ? GREY : muted ? color : Color.WHITE);
-            filled(canvas, END, right, CLEAR_RED, "HANG UP", call.end != null);
+            mic(canvas, left, muteFailed || muted, muteFailed ? GREY : muted ? color : Color.WHITE);
+            filledIcon(canvas, END, right, CLEAR_RED, HANG_UP_ANGLE, call.end != null);
         }
     }
 
-    /** A solid button (the call's own colours: red ends, green answers) with a white label. */
-    private void filled(Canvas canvas, int id, RectF r, int colour, String s, boolean enabled) {
+    /**
+     * A microphone, struck through when `off` (muted, or muting didn't take): a capsule, the
+     * cradle under it and its stand, in a 24-unit box.
+     */
+    private void mic(Canvas canvas, RectF r, boolean off, int colour) {
+        float s = r.height() * 0.68f;
+        canvas.save();
+        canvas.translate(r.centerX() - s / 2, r.centerY() - s / 2);
+        canvas.scale(s / 24, s / 24);
+        fill.setColor(colour);
+        canvas.drawRoundRect(9, 2, 15, 14, 3, 3, fill);
+        outline.setColor(colour);
+        outline.setStrokeWidth(1.8f);
+        outline.setStrokeCap(Paint.Cap.ROUND);
+        canvas.drawArc(5.5f, 4.5f, 18.5f, 17.5f, 0, 180, false, outline);
+        canvas.drawLine(12, 17.5f, 12, 21.5f, outline);
+        if (off) {
+            outline.setStrokeWidth(2.2f);
+            canvas.drawLine(4, 3, 20, 21, outline);
+        }
+        outline.setStrokeCap(Paint.Cap.BUTT);
+        canvas.restore();
+    }
+
+    /** A solid button (the call's own colours: red ends, green answers) with a white handset, turned by `angle` degrees: upright answers, 135 hangs up. */
+    private void filledIcon(Canvas canvas, int id, RectF r, int colour, float angle, boolean enabled) {
+        pill(canvas, id, r, colour, enabled);
+        float s = r.height() * 0.68f;
+        canvas.save();
+        canvas.translate(r.centerX() - s / 2, r.centerY() - s / 2);
+        canvas.scale(s / 24, s / 24);
+        canvas.rotate(angle, 12, 12);
+        fill.setColor(Color.WHITE);
+        canvas.drawPath(HANDSET, fill);
+        canvas.restore();
+    }
+
+    private void pill(Canvas canvas, int id, RectF r, int colour, boolean enabled) {
         float radius = r.height() * 0.5f;
         fill.setColor(!enabled ? GREY : pressed == id ? SegmentPainter.dim(colour) : colour);
         canvas.drawRoundRect(r, radius, radius, fill);
         if (enabled) {
             hits.put(id, r);
         }
-        centred(canvas, s, r, Color.WHITE);
     }
 
-    private void centred(Canvas canvas, String s, RectF r, int colour) {
-        text.setTextSize(r.height() * 0.42f);
-        text.setColor(colour);
-        text.setFakeBoldText(true);
-        float w = text.measureText(s);
-        Paint.FontMetrics m = text.getFontMetrics();
-        canvas.drawText(s, r.centerX() - w / 2, r.centerY() - (m.ascent + m.descent) / 2, text);
-        text.setFakeBoldText(false);
-    }
 
     /** The caller's picture in a circle, else their initial on the clock colour. */
     private void drawPhoto(Canvas canvas, float x, float y, float s, int color) {
