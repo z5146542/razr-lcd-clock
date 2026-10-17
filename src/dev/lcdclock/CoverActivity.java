@@ -52,6 +52,8 @@ public class CoverActivity extends Activity {
     /** The face's panels, not tabs: swipe up for notifications, down for quick controls. */
     static final String PAGE_NOTICES = "notices";
     static final String PAGE_CONTROLS = "controls";
+    /** A call in any app (Calls): opens when one rings, and stays while it goes on. */
+    static final String PAGE_CALL = "call";
 
     /** Resumed, so Media doesn't switch to MUSIC under someone using another page. */
     private static boolean showing;
@@ -119,7 +121,7 @@ public class CoverActivity extends Activity {
 
     /** Pages with no menu row: the face, which looks like Motorola's, and its panels, which have their own. */
     static boolean hidesMenu(String page) {
-        return PAGE_FACE.equals(page) || isPanel(page);
+        return PAGE_FACE.equals(page) || isPanel(page) || PAGE_CALL.equals(page);
     }
 
     static boolean isMusic(String page) {
@@ -144,6 +146,9 @@ public class CoverActivity extends Activity {
      * page, else our face; or null.
      */
     static String homePage(Context context) {
+        if (Calls.current(context) != null) {
+            return PAGE_CALL;
+        }
         String ringing = ringingPage(context);
         if (ringing != null) {
             return ringing;
@@ -242,6 +247,9 @@ public class CoverActivity extends Activity {
     }
 
     private void swipe(int direction) {
+        if (PAGE_CALL.equals(page)) {
+            return; // a call isn't swiped away by mistake
+        }
         if (isPanel(page)) {
             open(PAGE_FACE, direction); // sideways off a panel: back to the face
             return;
@@ -317,6 +325,8 @@ public class CoverActivity extends Activity {
             view = new NotificationsView(this, this::closePanel);
         } else if (PAGE_CONTROLS.equals(next)) {
             view = new QuickView(this, this::closePanel, this::finish);
+        } else if (PAGE_CALL.equals(next)) {
+            view = new CallView(this, this::callGone);
         } else if (PAGE_HOME.equals(next)) {
             view = new HomeView(this);
         } else if (PAGE_CALENDAR.equals(next)) {
@@ -334,13 +344,26 @@ public class CoverActivity extends Activity {
         return view;
     }
 
+    /** The call has ended: on to whatever the cover would wake to, else away. */
+    private void callGone() {
+        if (!PAGE_CALL.equals(page)) {
+            return;
+        }
+        String home = homePage(this);
+        if (home != null) {
+            open(home, 0);
+        } else {
+            finish();
+        }
+    }
+
     /**
      * Sets the screen timeout to the page's own, chosen in the app (Prefs.blackout); the phone's
      * own while something rings. Touches reset it as usual. The window field for this is hidden
      * from apps, hence reflection.
      */
     private void applyTimeout() {
-        boolean ringing = ringing(this);
+        boolean ringing = ringing(this) || PAGE_CALL.equals(page) && Calls.ringing(this);
         // While ringing the screen stays on: turning off would also cancel the vibration.
         frame.removeCallbacks(ringWatch);
         if (ringing) {
@@ -382,6 +405,10 @@ public class CoverActivity extends Activity {
         return showing;
     }
 
+    static boolean isOnCall() {
+        return showing && PAGE_CALL.equals(shownPage);
+    }
+
     static boolean isOnFace() {
         return PAGE_FACE.equals(shownPage);
     }
@@ -394,7 +421,7 @@ public class CoverActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-        String ringingPage = ringingPage(this);
+        String ringingPage = Calls.ringing(this) ? PAGE_CALL : ringingPage(this);
         if (asleep) {
             asleep = false;
             String home = homePage(this);
@@ -436,7 +463,7 @@ public class CoverActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
-        if (isFinishing() || ringing(this)) {
+        if (isFinishing() || ringing(this) || Calls.ringing(this)) {
             return; // leaving anyway, or staying until the ringing is stopped
         }
         String home = CoverScreen.isPhoneClosed(this) ? homePage(this) : null;

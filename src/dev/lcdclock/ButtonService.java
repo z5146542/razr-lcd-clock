@@ -113,6 +113,7 @@ public class ButtonService extends AccessibilityService {
     public boolean onUnbind(Intent intent) {
         running = false;
         instance = null;
+        CallOverlay.hide();
         CoverHome.stop();
         if (MediaListener.connected == null) {
             ClockWidget.stop();
@@ -127,6 +128,11 @@ public class ButtonService extends AccessibilityService {
         if (event.getDisplayId() == Display.DEFAULT_DISPLAY) {
             PipGuard.onWindowsChanged();
         }
+    }
+
+    /** The connected service, for CallOverlay's window; null while it's off. */
+    static ButtonService get() {
+        return instance;
     }
 
     /** Locks the phone now, as the power button does; false while the service is off. */

@@ -47,6 +47,7 @@ public class MediaListener extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn, RankingMap rankingMap) {
         Notices.changed();
+        Calls.posted(this, sbn);
     }
 
     @Override
