@@ -371,10 +371,19 @@ final class Media {
     /** Seeks by deltaMs from where the track is now (or from the last seek, if it's still pending). */
     static void seekBy(MediaController controller, PlaybackState state, MediaMetadata metadata, long deltaMs) {
         long position = position(controller, state);
-        if (position < 0) {
-            return;
+        if (position >= 0) {
+            seekTo(controller, metadata, position + deltaMs);
         }
-        long target = Math.max(0, position + deltaMs);
+    }
+
+    /** Whether the player takes a seek to any point: most do, some live streams don't. */
+    static boolean canSeek(PlaybackState state) {
+        return state != null && (state.getActions() & PlaybackState.ACTION_SEEK_TO) != 0;
+    }
+
+    /** Seeks to `target` ms, kept within the track; shown at once, before the player reports it. */
+    static void seekTo(MediaController controller, MediaMetadata metadata, long target) {
+        target = Math.max(0, target);
         long duration = duration(metadata);
         if (duration > 0) {
             target = Math.min(target, duration);

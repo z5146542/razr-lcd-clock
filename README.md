@@ -49,7 +49,8 @@ clock-face plugin interface, so a Motorola update could break it.
   - **WEATHER**: the forecast from Open-Meteo.
   - **RECORDER**: a voice recorder.
   - **HOME**: three Home Assistant buttons.
-  - **MUSIC**: one tab per app that's playing.
+  - **MUSIC**: one tab per app that's playing. Drag along the progress bar to jump to another
+    point in the track, if the player allows it.
 - **Panels**:
   - **Notifications** (swipe up): tap one to read all of it. Contents stay hidden while the phone
     is locked, and × and CLEAR are greyed out until it's unlocked.

@@ -26,7 +26,8 @@ import java.util.Map;
 /**
  * The cover screen's MUSIC page, after a GOM Audio mini player: the track position in big
  * segment digits, the same size for MM:SS and H:MM:SS (as big as the hours fit); under it the
- * play state, a scrolling "Artist - Title" and the track length; a progress bar, album art on the right, and previous / back 5 s / play-pause / forward 5 s /
+ * play state, a scrolling "Artist - Title" and the track length; a progress bar (dragged along to
+ * scrub, if the player can seek), album art on the right, and previous / back 5 s / play-pause / forward 5 s /
  * next along the bottom (the time of day is in CoverTabs' menu row). Each app playing has its
  * own MUSIC page and tab; the plain MUSIC tab, shown when none is, uses whichever Media picks.
  * Laid out for the 368x194 outside screen; on any other shape it uses the largest box of that
@@ -40,6 +41,8 @@ final class MusicView extends View {
     private static final int FORWARD = 5;
     private static final int NEXT = 6;
     private static final int[] ROW = {PREV, BACK, PLAY, FORWARD, NEXT};
+    /** The progress bar, as a touch target. */
+    private static final int BAR = 7;
     /** Play-pause is this many times as wide as the other buttons. */
     private static final float PLAY_WEIGHT = 1.4f;
 
@@ -64,6 +67,11 @@ final class MusicView extends View {
     /** Touch targets laid out by the last onDraw. */
     private final Map<Integer, RectF> hits = new LinkedHashMap<>();
     private int pressed = NONE;
+    /** Where the bar's being dragged to, in ms, shown instead of the position; -1 when it isn't. */
+    private long scrubTo = -1;
+    /** The bar's ends, for turning a finger's x into a time. */
+    private float barLeft;
+    private float barRight;
 
     // The player as of the last refresh(); reading it is a call into the player, so not per frame.
     private MediaController controller;
@@ -180,7 +188,7 @@ final class MusicView extends View {
      */
     private void drawInfo(Canvas canvas, int color, float left, float right, float top, float h) {
         long duration = Media.duration(metadata);
-        long position = controller == null ? -1 : Media.position(controller, state);
+        long position = scrubTo >= 0 ? scrubTo : controller == null ? -1 : Media.position(controller, state);
         boolean hours = Math.max(duration, position) >= 3_600_000;
         String lengthGhost = ghost7(length(hours ? 3_600_000 : 0));
 
@@ -214,8 +222,15 @@ final class MusicView extends View {
         canvas.drawRect(left, barY - t / 2, right, barY + t / 2, fill);
         if (duration > 0 && position >= 0) {
             fill.setColor(color);
-            canvas.drawRect(left, barY - t / 2, left + (right - left) * Math.min(1f, position / (float) duration),
-                    barY + t / 2, fill);
+            float end = left + (right - left) * Math.min(1f, position / (float) duration);
+            canvas.drawRect(left, barY - t / 2, end, barY + t / 2, fill);
+            if (Media.canSeek(state)) {
+                // A knob says it can be dragged; bigger while it is. Touchable well above and below.
+                canvas.drawCircle(end, barY, t * (scrubTo >= 0 ? 3f : 1.8f), fill);
+                barLeft = left;
+                barRight = right;
+                hits.put(BAR, new RectF(left - t * 4, barY - h * 0.16f, right + t * 4, barY + h * 0.12f));
+            }
         }
         titlePaint.setTextSize(h * 0.19f);
         Paint.FontMetrics metrics = titlePaint.getFontMetrics();
@@ -445,13 +460,15 @@ final class MusicView extends View {
 
     // ---- touch ----
 
+    /** The control under (x, y); the buttons before the bar, whose touch area reaches towards them. */
     private int hit(float x, float y) {
         for (Map.Entry<Integer, RectF> e : hits.entrySet()) {
-            if (e.getValue().contains(x, y)) {
+            if (e.getKey() != BAR && e.getValue().contains(x, y)) {
                 return e.getKey();
             }
         }
-        return NONE;
+        RectF bar = hits.get(BAR);
+        return bar != null && bar.contains(x, y) ? BAR : NONE;
     }
 
     @Override
@@ -459,10 +476,17 @@ final class MusicView extends View {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 pressed = hit(event.getX(), event.getY());
+                if (pressed == BAR) {
+                    getParent().requestDisallowInterceptTouchEvent(true); // a drag here scrubs, not swipes
+                    scrubTo = scrubTime(event.getX());
+                }
                 invalidate();
                 return true;
             case MotionEvent.ACTION_MOVE:
-                if (pressed != NONE && hit(event.getX(), event.getY()) != pressed) {
+                if (pressed == BAR) {
+                    scrubTo = scrubTime(event.getX());
+                    invalidate();
+                } else if (pressed != NONE && hit(event.getX(), event.getY()) != pressed) {
                     pressed = NONE;
                     invalidate();
                 }
@@ -470,18 +494,32 @@ final class MusicView extends View {
             case MotionEvent.ACTION_UP:
                 int control = pressed;
                 pressed = NONE;
-                if (control != NONE && hit(event.getX(), event.getY()) == control) {
+                if (control == BAR) {
+                    long target = scrubTime(event.getX());
+                    scrubTo = -1;
+                    if (controller != null) {
+                        Media.seekTo(controller, metadata, target);
+                        Log.d(Binders.TAG, "music: scrubbed to " + target + " on " + controller.getPackageName());
+                    }
+                } else if (control != NONE && hit(event.getX(), event.getY()) == control) {
                     perform(control);
                 }
                 invalidate();
                 return true;
             case MotionEvent.ACTION_CANCEL:
                 pressed = NONE;
+                scrubTo = -1;
                 invalidate();
                 return true;
             default:
                 return super.onTouchEvent(event);
         }
+    }
+
+    /** The time at `x` along the bar. */
+    private long scrubTime(float x) {
+        float f = Math.max(0, Math.min(1, (x - barLeft) / Math.max(1, barRight - barLeft)));
+        return (long) (f * Media.duration(metadata));
     }
 
     private void perform(int control) {
